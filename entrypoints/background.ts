@@ -1,5 +1,5 @@
-type SortMode = 'title' | 'website' | 'lastAccessed';
-type Direction = 'up' | 'down' | 'left' | 'right';
+type SortMode = "title" | "website" | "lastAccessed";
+type Direction = "up" | "down" | "left" | "right";
 type TabPreviews = Record<string, string>;
 
 interface Point {
@@ -30,24 +30,34 @@ interface BrowserWindow {
   height?: number;
 }
 
-const PREVIEWS_KEY = 'tabPreviews';
-const DEFAULT_SORT_MODE_KEY = 'defaultSortMode';
+const PREVIEWS_KEY = "tabPreviews";
+const DEFAULT_SORT_MODE_KEY = "defaultSortMode";
 const TAB_GROUP_ID_NONE = -1;
 
 const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();
-const GENERIC_SLDS = new Set(['co', 'com', 'net', 'org', 'gov', 'edu', 'ac', 'mil']);
+const GENERIC_SLDS = new Set([
+  "co",
+  "com",
+  "net",
+  "org",
+  "gov",
+  "edu",
+  "ac",
+  "mil",
+]);
 
 export default defineBackground(() => {
   browser.commands.onCommand.addListener(async (command) => {
-    if (command === 'sort-tabs') {
+    if (command === "sort-tabs") {
       const data = await browser.storage.sync.get(DEFAULT_SORT_MODE_KEY);
-      const defaultMode = (data[DEFAULT_SORT_MODE_KEY] as SortMode | undefined) ?? 'website';
+      const defaultMode =
+        (data[DEFAULT_SORT_MODE_KEY] as SortMode | undefined) ?? "website";
       await sortTabsByMode(defaultMode);
       return;
     }
 
-    if (command.startsWith('move-tab-')) {
-      const direction = command.replace('move-tab-', '') as Direction;
+    if (command.startsWith("move-tab-")) {
+      const direction = command.replace("move-tab-", "") as Direction;
       if (isDirection(direction)) {
         await moveActiveTabToDirection(direction);
       }
@@ -56,34 +66,39 @@ export default defineBackground(() => {
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     (async () => {
-      if (message?.action === 'sortByTitle') {
+      if (message?.action === "sortByTitle") {
         await sortByTitle();
         sendResponse({ success: true });
         return;
       }
 
-      if (message?.action === 'sortByWebsite') {
+      if (message?.action === "sortByWebsite") {
         await sortByWebsite();
         sendResponse({ success: true });
         return;
       }
 
-      if (message?.action === 'sortByLastAccessed') {
+      if (message?.action === "sortByLastAccessed") {
         await sortByLastAccessed();
         sendResponse({ success: true });
         return;
       }
 
-      if (message?.action === 'moveTabDirection' && isDirection(message?.direction)) {
+      if (
+        message?.action === "moveTabDirection" &&
+        isDirection(message?.direction)
+      ) {
         await moveActiveTabToDirection(message.direction);
         sendResponse({ success: true });
         return;
       }
 
-      sendResponse({ success: false, error: 'Unknown action.' });
+      sendResponse({ success: false, error: "Unknown action." });
     })().catch((error: unknown) => {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown background action error';
+        error instanceof Error
+          ? error.message
+          : "Unknown background action error";
       sendResponse({ success: false, error: errorMessage });
     });
 
@@ -117,7 +132,9 @@ export default defineBackground(() => {
 });
 
 function isDirection(value: unknown): value is Direction {
-  return value === 'up' || value === 'down' || value === 'left' || value === 'right';
+  return (
+    value === "up" || value === "down" || value === "left" || value === "right"
+  );
 }
 
 function shouldSkipPreviewCapture(url: string | undefined): boolean {
@@ -125,7 +142,7 @@ function shouldSkipPreviewCapture(url: string | undefined): boolean {
     return true;
   }
 
-  return url.startsWith('chrome://') || url.startsWith('chrome-extension://');
+  return url.startsWith("chrome://") || url.startsWith("chrome-extension://");
 }
 
 async function captureActiveTabPreview(windowId: number, tabId: number) {
@@ -136,7 +153,7 @@ async function captureActiveTabPreview(windowId: number, tabId: number) {
     }
 
     const dataUrl = await browser.tabs.captureVisibleTab(windowId, {
-      format: 'jpeg',
+      format: "jpeg",
       quality: 40,
     });
 
@@ -150,12 +167,12 @@ async function captureActiveTabPreview(windowId: number, tabId: number) {
 }
 
 async function sortTabsByMode(mode: SortMode) {
-  if (mode === 'title') {
+  if (mode === "title") {
     await sortByTitle();
     return;
   }
 
-  if (mode === 'lastAccessed') {
+  if (mode === "lastAccessed") {
     await sortByLastAccessed();
     return;
   }
@@ -164,7 +181,7 @@ async function sortTabsByMode(mode: SortMode) {
 }
 
 async function sortByTitle() {
-  await sortTabs((a, b) => naturalCompare(a.title ?? '', b.title ?? ''));
+  await sortTabs((a, b) => naturalCompare(a.title ?? "", b.title ?? ""));
 }
 
 async function sortByLastAccessed() {
@@ -175,7 +192,7 @@ async function sortByWebsite() {
   const sortKeyCache = new Map<string, string>();
 
   const getCachedSortKey = (url: string | undefined) => {
-    const key = url ?? '';
+    const key = url ?? "";
     if (!sortKeyCache.has(key)) {
       sortKeyCache.set(key, getUrlSortKey(key));
     }
@@ -192,8 +209,12 @@ async function sortByWebsite() {
 async function sortTabs(compareFn: (a: BrowserTab, b: BrowserTab) => number) {
   const tabs = await browser.tabs.query({ currentWindow: true });
   const pinnedTabs = tabs.filter((tab) => tab.pinned);
-  const groupedTabs = tabs.filter((tab) => !tab.pinned && tab.groupId !== TAB_GROUP_ID_NONE);
-  const ungroupedTabs = tabs.filter((tab) => !tab.pinned && tab.groupId === TAB_GROUP_ID_NONE);
+  const groupedTabs = tabs.filter(
+    (tab) => !tab.pinned && tab.groupId !== TAB_GROUP_ID_NONE,
+  );
+  const ungroupedTabs = tabs.filter(
+    (tab) => !tab.pinned && tab.groupId === TAB_GROUP_ID_NONE,
+  );
 
   const groupIds = [...new Set(groupedTabs.map((tab) => tab.groupId))];
   const groupSizes = new Map<number, number>();
@@ -243,18 +264,18 @@ function naturalCompare(a: string, b: string): number {
 function getUrlSortKey(url: string): string {
   try {
     const urlObj = new URL(url);
-    const protocol = urlObj.protocol.replace(':', '');
-    const parts = urlObj.hostname.split('.').reverse();
+    const protocol = urlObj.protocol.replace(":", "");
+    const parts = urlObj.hostname.split(".").reverse();
     const path = urlObj.pathname;
 
     const isCountryTld =
       parts.length >= 3 && parts[0].length === 2 && GENERIC_SLDS.has(parts[1]);
     const domainPartCount = isCountryTld ? 3 : Math.min(2, parts.length);
 
-    const domain = parts.slice(0, domainPartCount).reverse().join('.');
-    const subdomains = parts.slice(domainPartCount).join('/');
+    const domain = parts.slice(0, domainPartCount).reverse().join(".");
+    const subdomains = parts.slice(domainPartCount).join("/");
 
-    return `/${protocol}/${domain}${subdomains ? `/${subdomains}` : ''}${path}`;
+    return `/${protocol}/${domain}${subdomains ? `/${subdomains}` : ""}${path}`;
   } catch {
     return url;
   }
@@ -275,14 +296,16 @@ async function moveActiveTabToDirection(direction: Direction) {
     return;
   }
 
-  const allWindows = await browser.windows.getAll({ windowTypes: ['normal'] });
-  const candidates = allWindows.filter((windowRef) => windowRef.state !== 'minimized');
+  const allWindows = await browser.windows.getAll({ windowTypes: ["normal"] });
+  const candidates = allWindows.filter(
+    (windowRef) => windowRef.state !== "minimized",
+  );
   if (candidates.length <= 1) {
     return;
   }
 
   const targetWindow =
-    currentWindow.state === 'maximized' || currentWindow.state === 'fullscreen'
+    currentWindow.state === "maximized" || currentWindow.state === "fullscreen"
       ? findCyclicTarget(candidates, currentWindow.id, direction)
       : findGeometricTarget(candidates, currentWindow, direction);
 
@@ -290,7 +313,10 @@ async function moveActiveTabToDirection(direction: Direction) {
     return;
   }
 
-  await browser.tabs.move(activeTab.id, { windowId: targetWindow.id, index: -1 });
+  await browser.tabs.move(activeTab.id, {
+    windowId: targetWindow.id,
+    index: -1,
+  });
   await Promise.all([
     browser.tabs.update(activeTab.id, { active: true }),
     browser.windows.update(targetWindow.id, { focused: true }),
@@ -308,7 +334,7 @@ function findCyclicTarget(
     return null;
   }
 
-  const isPrev = direction === 'up' || direction === 'left';
+  const isPrev = direction === "up" || direction === "left";
   const nextIdx = isPrev
     ? (idx - 1 + sorted.length) % sorted.length
     : (idx + 1) % sorted.length;
@@ -316,29 +342,32 @@ function findCyclicTarget(
   return sorted[nextIdx] ?? null;
 }
 
-function getEdgeMidpoints(windowRef: BrowserWindow, direction: Direction): EdgeMidpoints {
+function getEdgeMidpoints(
+  windowRef: BrowserWindow,
+  direction: Direction,
+): EdgeMidpoints {
   const left = windowRef.left ?? 0;
   const top = windowRef.top ?? 0;
   const width = windowRef.width ?? 0;
   const height = windowRef.height ?? 0;
 
   switch (direction) {
-    case 'right':
+    case "right":
       return {
         current: { x: left + width, y: top + height / 2 },
         candidate: { x: left, y: top + height / 2 },
       };
-    case 'left':
+    case "left":
       return {
         current: { x: left, y: top + height / 2 },
         candidate: { x: left + width, y: top + height / 2 },
       };
-    case 'down':
+    case "down":
       return {
         current: { x: left + width / 2, y: top + height },
         candidate: { x: left + width / 2, y: top },
       };
-    case 'up':
+    case "up":
       return {
         current: { x: left + width / 2, y: top },
         candidate: { x: left + width / 2, y: top + height },
@@ -353,12 +382,14 @@ function findGeometricTarget(
 ): BrowserWindow | null {
   const { current: refPoint } = getEdgeMidpoints(currentWindow, direction);
 
-  const inRange = windows.filter((windowRef) => windowRef.id !== currentWindow.id);
+  const inRange = windows.filter(
+    (windowRef) => windowRef.id !== currentWindow.id,
+  );
   if (inRange.length === 0) {
     return null;
   }
 
-  const isHorizontal = direction === 'left' || direction === 'right';
+  const isHorizontal = direction === "left" || direction === "right";
 
   inRange.sort((a, b) => {
     const { candidate: candidateA } = getEdgeMidpoints(a, direction);

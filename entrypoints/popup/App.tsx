@@ -1,40 +1,49 @@
-import { useEffect, useMemo, useState } from 'react';
-import './App.css';
+import { useEffect, useMemo, useState } from "react";
+import "./App.css";
 
-type SortMode = 'title' | 'website' | 'lastAccessed';
-type Direction = 'up' | 'down' | 'left' | 'right';
+type SortMode = "title" | "website" | "lastAccessed";
+type Direction = "up" | "down" | "left" | "right";
 
-const DEFAULT_SORT_MODE_KEY = 'defaultSortMode';
+const DEFAULT_SORT_MODE_KEY = "defaultSortMode";
 
 async function sendBackgroundAction(message: Record<string, unknown>) {
   const response = await browser.runtime.sendMessage(message);
   if (!response?.success) {
-    throw new Error(response?.error ?? 'Background action failed.');
+    throw new Error(response?.error ?? "Background action failed.");
   }
 }
 
 function App() {
-  const [status, setStatus] = useState('Ready');
-  const [defaultSortMode, setDefaultSortMode] = useState<SortMode>('website');
-  const [shortcutHint, setShortcutHint] = useState('Alt+Shift+S: Sort tabs using default order');
+  const [status, setStatus] = useState("Ready");
+  const [defaultSortMode, setDefaultSortMode] = useState<SortMode>("website");
+  const [shortcutHint, setShortcutHint] = useState(
+    "Alt+Shift+S: Sort tabs using default order",
+  );
 
   const statusClassName = useMemo(
     () =>
-      status.toLowerCase().startsWith('error')
-        ? 'status status-error'
-        : 'status status-info',
+      status.toLowerCase().startsWith("error")
+        ? "status status-error"
+        : "status status-info",
     [status],
   );
 
   useEffect(() => {
     void (async () => {
       const data = await browser.storage.sync.get(DEFAULT_SORT_MODE_KEY);
-      const mode = (data[DEFAULT_SORT_MODE_KEY] as SortMode | undefined) ?? 'website';
-      setDefaultSortMode(mode === 'title' || mode === 'lastAccessed' ? mode : 'website');
+      const mode =
+        (data[DEFAULT_SORT_MODE_KEY] as SortMode | undefined) ?? "website";
+      setDefaultSortMode(
+        mode === "title" || mode === "lastAccessed" ? mode : "website",
+      );
       const commands = await browser.commands.getAll();
-      const sortCommand = commands.find((command) => command.name === 'sort-tabs');
+      const sortCommand = commands.find(
+        (command) => command.name === "sort-tabs",
+      );
       if (sortCommand?.shortcut) {
-        setShortcutHint(`${sortCommand.shortcut}: Sort tabs using default order`);
+        setShortcutHint(
+          `${sortCommand.shortcut}: Sort tabs using default order`,
+        );
       }
     })();
   }, []);
@@ -45,7 +54,7 @@ function App() {
       await sendBackgroundAction({ action: actionToMessage(action) });
       setStatus(`Sorted by ${toLabel(action)}.`);
     } catch {
-      setStatus('Error: failed to sort tabs.');
+      setStatus("Error: failed to sort tabs.");
     }
   }
 
@@ -58,10 +67,10 @@ function App() {
   async function moveTab(direction: Direction) {
     try {
       setStatus(`Moving tab ${direction}...`);
-      await sendBackgroundAction({ action: 'moveTabDirection', direction });
+      await sendBackgroundAction({ action: "moveTabDirection", direction });
       setStatus(`Moved tab ${direction}.`);
     } catch {
-      setStatus('Error: failed to move tab.');
+      setStatus("Error: failed to move tab.");
     }
   }
 
@@ -72,13 +81,13 @@ function App() {
       <section className="section">
         <h2>Sort Tabs</h2>
         <div className="button-grid">
-          <button type="button" onClick={() => void runSort('title')}>
+          <button type="button" onClick={() => void runSort("title")}>
             By Title
           </button>
-          <button type="button" onClick={() => void runSort('website')}>
+          <button type="button" onClick={() => void runSort("website")}>
             By Website
           </button>
-          <button type="button" onClick={() => void runSort('lastAccessed')}>
+          <button type="button" onClick={() => void runSort("lastAccessed")}>
             By Last Accessed
           </button>
         </div>
@@ -90,24 +99,24 @@ function App() {
           <label>
             <input
               type="radio"
-              checked={defaultSortMode === 'title'}
-              onChange={() => void setDefaultSort('title')}
+              checked={defaultSortMode === "title"}
+              onChange={() => void setDefaultSort("title")}
             />
             Title
           </label>
           <label>
             <input
               type="radio"
-              checked={defaultSortMode === 'website'}
-              onChange={() => void setDefaultSort('website')}
+              checked={defaultSortMode === "website"}
+              onChange={() => void setDefaultSort("website")}
             />
             Website
           </label>
           <label>
             <input
               type="radio"
-              checked={defaultSortMode === 'lastAccessed'}
-              onChange={() => void setDefaultSort('lastAccessed')}
+              checked={defaultSortMode === "lastAccessed"}
+              onChange={() => void setDefaultSort("lastAccessed")}
             />
             Last Accessed
           </label>
@@ -117,16 +126,16 @@ function App() {
       <section className="section">
         <h2>Shift Tab Between Windows</h2>
         <div className="button-grid direction-grid">
-          <button type="button" onClick={() => void moveTab('up')}>
+          <button type="button" onClick={() => void moveTab("up")}>
             Up
           </button>
-          <button type="button" onClick={() => void moveTab('down')}>
+          <button type="button" onClick={() => void moveTab("down")}>
             Down
           </button>
-          <button type="button" onClick={() => void moveTab('left')}>
+          <button type="button" onClick={() => void moveTab("left")}>
             Left
           </button>
-          <button type="button" onClick={() => void moveTab('right')}>
+          <button type="button" onClick={() => void moveTab("right")}>
             Right
           </button>
         </div>
@@ -139,20 +148,20 @@ function App() {
 }
 
 function actionToMessage(mode: SortMode): string {
-  if (mode === 'title') {
-    return 'sortByTitle';
+  if (mode === "title") {
+    return "sortByTitle";
   }
 
-  if (mode === 'lastAccessed') {
-    return 'sortByLastAccessed';
+  if (mode === "lastAccessed") {
+    return "sortByLastAccessed";
   }
 
-  return 'sortByWebsite';
+  return "sortByWebsite";
 }
 
 function toLabel(mode: SortMode): string {
-  if (mode === 'lastAccessed') {
-    return 'last accessed';
+  if (mode === "lastAccessed") {
+    return "last accessed";
   }
 
   return mode;
