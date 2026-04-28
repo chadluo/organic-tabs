@@ -1,42 +1,82 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.popup-root {
+  width: 360px;
+  padding: 14px;
+  color: #1b1d21;
+  font-family: 'SF Pro Text', 'Segoe UI', sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #54bc4ae0);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+h1 {
+  margin: 0 0 12px;
+  font-size: 20px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5c6573;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.section {
+  margin-bottom: 14px;
 }
 
-.card {
-  padding: 2em;
+.button-grid {
+  display: grid;
+  gap: 8px;
 }
 
-.read-the-docs {
-  color: #888;
+.direction-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+button {
+  border: 1px solid #c9d0db;
+  background: #f7f9fc;
+  color: #1b1d21;
+  border-radius: 8px;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+button:hover {
+  background: #ebf2fb;
+}
+
+.radio-row {
+  display: grid;
+  gap: 6px;
+}
+
+.radio-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.status {
+  margin: 6px 0;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.status-info {
+  background: #e9f2ff;
+  color: #0b4f98;
+}
+
+.status-error {
+  background: #fdebed;
+  color: #8e1e2c;
+}
+
+.shortcut {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #657084;
 }

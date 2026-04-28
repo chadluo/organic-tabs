@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Organic Tabs</title>
+    <link rel="stylesheet" href="./newtab.css" />
+  </head>
+  <body>
+    <template id="bookmark-link-template">
+      <img class="favicon" alt="" />
+      <span class="text-wrap"><a class="link"></a> <span class="hostname"></span></span>
+    </template>
+
+    <template id="tab-link-template">
+      <img class="favicon" alt="" />
+      <span class="text-wrap"><a class="link" href="#"></a> <span class="hostname"></span></span>
+    </template>
+
+    <main id="layout">
+      <section id="bookmarks-section">
+        <h2>Bookmarks</h2>
+      </section>
+      <section id="tabs-section">
+        <h2>Open Tabs</h2>
+      </section>
+    </main>
+
+    <footer id="settings-bar">
+      <div class="settings-group">
+        <span>Theme</span>
+        <label><input type="radio" name="theme" value="system" checked /> System</label>
+        <label><input type="radio" name="theme" value="light" /> Light</label>
+        <label><input type="radio" name="theme" value="dark" /> Dark</label>
+      </div>
+
+      <div class="settings-group">
+        <label>
+          Bookmark columns
+          <input type="range" name="bookmarkColumns" min="1" max="2" value="1" />
+          <span id="bookmarkColumns-value">1</span>
+        </label>
+      </div>
+
+      <div class="settings-group">
+        <label>
+          Tab columns
+          <input type="range" name="tabColumns" min="1" max="4" value="1" />
+          <span id="tabColumns-value">1</span>
+        </label>
+      </div>
+
+      <button id="collapse-bookmarks" type="button">Collapse bookmarks</button>
+      <button id="collapse-tabs" type="button">Collapse tabs</button>
+    </footer>
+
+    <script type="module" src="./newtab.ts"></script>
+  </body>
+</html>

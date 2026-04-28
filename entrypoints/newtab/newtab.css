@@ -1,0 +1,262 @@
+:root {
+  --color-link: #0060df;
+  --color-heading: #5a616d;
+  --color-summary: #2a313f;
+  --color-hostname: #7b8392;
+  --color-surface: #f8f9fb;
+  --color-text: #1f2532;
+
+  --color-group-grey: #5f6368;
+  --color-group-blue: #1a73e8;
+  --color-group-red: #d93025;
+  --color-group-yellow: #f9ab00;
+  --color-group-green: #1e8e3e;
+  --color-group-pink: #d01884;
+  --color-group-purple: #9334e6;
+  --color-group-cyan: #007b83;
+  --color-group-orange: #e8710a;
+}
+
+html.dark {
+  --color-link: #84c0ff;
+  --color-heading: #a8b0be;
+  --color-summary: #d7dce6;
+  --color-hostname: #8f97a6;
+  --color-surface: #131821;
+  --color-text: #e5e9f1;
+
+  --color-group-grey: #9aa0a6;
+  --color-group-blue: #8ab4f8;
+  --color-group-red: #f28b82;
+  --color-group-yellow: #fdd663;
+  --color-group-green: #81c995;
+  --color-group-pink: #f48fb1;
+  --color-group-purple: #c58af9;
+  --color-group-cyan: #78d9ec;
+  --color-group-orange: #fcad70;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 24px 24px 76px;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.45;
+  color: var(--color-text);
+  background: radial-gradient(circle at top right, #ffffff 0%, var(--color-surface) 55%);
+}
+
+#layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+#bookmarks-section,
+#tabs-section {
+  min-width: 0;
+  flex: 1;
+  column-gap: 2rem;
+}
+
+#bookmarks-section > h2,
+#tabs-section > h2 {
+  margin: 0 0 0.8rem;
+  column-span: all;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-heading);
+}
+
+details {
+  margin-left: 0.75rem;
+  break-inside: avoid;
+}
+
+details > summary {
+  cursor: pointer;
+  padding: 0.2rem 0;
+  font-weight: 600;
+  color: var(--color-summary);
+  list-style-type: disclosure-closed;
+}
+
+details > summary:hover {
+  color: var(--color-link);
+}
+
+details > summary.current-window {
+  font-weight: 800;
+}
+
+details[open] > summary {
+  list-style-type: disclosure-open;
+}
+
+ul {
+  list-style: none;
+  padding-left: 1rem;
+  margin: 0.25rem 0;
+}
+
+li {
+  padding: 0.15rem 0;
+}
+
+bookmark-link,
+tab-link {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.favicon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.text-wrap {
+  min-width: 0;
+  line-height: 1.15rem;
+}
+
+.link {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.hostname {
+  color: var(--color-hostname);
+  font-size: 0.85em;
+}
+
+tab-link.duplicate-highlight {
+  background: color-mix(in srgb, var(--color-link) 14%, transparent);
+  border-radius: 4px;
+}
+
+.group-grey {
+  color: var(--color-group-grey);
+}
+
+.group-blue {
+  color: var(--color-group-blue);
+}
+
+.group-red {
+  color: var(--color-group-red);
+}
+
+.group-yellow {
+  color: var(--color-group-yellow);
+}
+
+.group-green {
+  color: var(--color-group-green);
+}
+
+.group-pink {
+  color: var(--color-group-pink);
+}
+
+.group-purple {
+  color: var(--color-group-purple);
+}
+
+.group-cyan {
+  color: var(--color-group-cyan);
+}
+
+.group-orange {
+  color: var(--color-group-orange);
+}
+
+#settings-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem;
+  font-size: 0.82rem;
+  color: var(--color-hostname);
+  border-top: 1px solid color-mix(in srgb, var(--color-hostname) 25%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 82%, #ffffff);
+  backdrop-filter: blur(6px);
+}
+
+.settings-group {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.settings-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+#settings-bar button {
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--color-hostname) 30%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  padding: 0.2rem 0.45rem;
+}
+
+#settings-bar button:hover {
+  background: color-mix(in srgb, var(--color-hostname) 10%, transparent);
+}
+
+.tab-preview {
+  position: fixed;
+  z-index: 9999;
+  width: 320px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(128, 128, 128, 0.28);
+  pointer-events: none;
+}
+
+.tab-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 980px) {
+  body {
+    padding: 14px 14px 150px;
+  }
+
+  #layout {
+    flex-direction: column;
+  }
+
+  #bookmarks-section,
+  #tabs-section {
+    width: 100%;
+    columns: 1 !important;
+  }
+
+  #settings-bar {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    padding: 0.7rem;
+  }
+}
