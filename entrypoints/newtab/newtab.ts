@@ -1,9 +1,9 @@
-const SETTINGS_KEY = 'userSettings';
-const STORAGE_KEY = 'detailsState';
-const TAB_PREVIEWS_KEY = 'tabPreviews';
+const SETTINGS_KEY = "userSettings";
+const STORAGE_KEY = "detailsState";
+const TAB_PREVIEWS_KEY = "tabPreviews";
 const TAB_GROUP_ID_NONE = -1;
 
-type Theme = 'system' | 'light' | 'dark';
+type Theme = "system" | "light" | "dark";
 
 type DetailsState = Record<string, boolean>;
 
@@ -32,7 +32,7 @@ interface BrowserTab {
 }
 
 const defaultSettings: UserSettings = {
-  theme: 'system',
+  theme: "system",
   bookmarkColumns: 1,
   tabColumns: 1,
 };
@@ -63,33 +63,42 @@ function saveState(state: DetailsState) {
 }
 
 function applyTheme(theme: Theme) {
+  const root = document.documentElement;
+
   if (mediaQuery) {
-    mediaQuery.removeEventListener('change', onSystemThemeChange);
+    mediaQuery.removeEventListener("change", onSystemThemeChange);
     mediaQuery = null;
   }
 
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
+  root.classList.remove("dark", "light");
+
+  if (theme === "dark") {
+    root.classList.add("dark");
     return;
   }
 
-  if (theme === 'light') {
-    document.documentElement.classList.remove('dark');
+  if (theme === "light") {
+    root.classList.add("light");
     return;
   }
 
-  mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  document.documentElement.classList.toggle('dark', mediaQuery.matches);
-  mediaQuery.addEventListener('change', onSystemThemeChange);
+  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  root.classList.toggle("dark", mediaQuery.matches);
+  root.classList.toggle("light", !mediaQuery.matches);
+  mediaQuery.addEventListener("change", onSystemThemeChange);
 }
 
 function onSystemThemeChange(event: MediaQueryListEvent) {
-  document.documentElement.classList.toggle('dark', event.matches);
+  const root = document.documentElement;
+  root.classList.toggle("dark", event.matches);
+  root.classList.toggle("light", !event.matches);
 }
 
 function applyLayout(settings: UserSettings) {
-  const bookmarksSection = document.getElementById('bookmarks-section') as HTMLElement;
-  const tabsSection = document.getElementById('tabs-section') as HTMLElement;
+  const bookmarksSection = document.getElementById(
+    "bookmarks-section",
+  ) as HTMLElement;
+  const tabsSection = document.getElementById("tabs-section") as HTMLElement;
 
   bookmarksSection.style.flex = String(settings.bookmarkColumns);
   tabsSection.style.flex = String(settings.tabColumns);
@@ -97,9 +106,13 @@ function applyLayout(settings: UserSettings) {
   tabsSection.style.columns = String(settings.tabColumns);
 }
 
-function trackDetails(details: HTMLDetailsElement, key: string, fallback: boolean) {
+function trackDetails(
+  details: HTMLDetailsElement,
+  key: string,
+  fallback: boolean,
+) {
   details.open = detailsState[key] ?? fallback;
-  details.addEventListener('toggle', () => {
+  details.addEventListener("toggle", () => {
     detailsState[key] = details.open;
     void saveState(detailsState);
   });
@@ -107,7 +120,7 @@ function trackDetails(details: HTMLDetailsElement, key: string, fallback: boolea
 
 function faviconUrl(pageUrl: string): string {
   if (!pageUrl) {
-    return '';
+    return "";
   }
 
   const encoded = encodeURIComponent(pageUrl);
@@ -118,24 +131,28 @@ function hostname(pageUrl: string): string {
   try {
     return new URL(pageUrl).hostname;
   } catch {
-    return '';
+    return "";
   }
 }
 
 function setSoftWrappingTitle(el: HTMLElement, title: string) {
-  const parts = title.split('/');
-  el.appendChild(document.createTextNode(parts[0] ?? ''));
+  const parts = title.split("/");
+  el.appendChild(document.createTextNode(parts[0] ?? ""));
 
   for (let i = 1; i < parts.length; i += 1) {
-    el.appendChild(document.createElement('wbr'));
+    el.appendChild(document.createElement("wbr"));
     el.appendChild(document.createTextNode(`/${parts[i]}`));
   }
 }
 
-function populateLink(content: DocumentFragment, url: string, faviconOverride = '') {
-  const img = content.querySelector('.favicon') as HTMLImageElement;
-  const host = content.querySelector('.hostname') as HTMLSpanElement;
-  const anchor = content.querySelector('.link') as HTMLAnchorElement;
+function populateLink(
+  content: DocumentFragment,
+  url: string,
+  faviconOverride = "",
+) {
+  const img = content.querySelector(".favicon") as HTMLImageElement;
+  const host = content.querySelector(".hostname") as HTMLSpanElement;
+  const anchor = content.querySelector(".link") as HTMLAnchorElement;
 
   img.src = faviconOverride || faviconUrl(url);
   host.textContent = hostname(url);
@@ -146,17 +163,19 @@ function populateLink(content: DocumentFragment, url: string, faviconOverride = 
 
 class BookmarkLink extends HTMLElement {
   connectedCallback() {
-    const template = document.getElementById('bookmark-link-template') as HTMLTemplateElement;
+    const template = document.getElementById(
+      "bookmark-link-template",
+    ) as HTMLTemplateElement;
     const content = template.content.cloneNode(true) as DocumentFragment;
-    const url = this.getAttribute('url') ?? '';
-    const title = this.getAttribute('title') || url;
-    const anchor = content.querySelector('.link') as HTMLAnchorElement;
+    const url = this.getAttribute("url") ?? "";
+    const title = this.getAttribute("title") || url;
+    const anchor = content.querySelector(".link") as HTMLAnchorElement;
 
     anchor.href = url;
     setSoftWrappingTitle(anchor, title);
 
-    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) {
-      anchor.addEventListener('click', (event) => {
+    if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
+      anchor.addEventListener("click", (event) => {
         event.preventDefault();
         void browser.tabs.update({ url });
       });
@@ -169,34 +188,36 @@ class BookmarkLink extends HTMLElement {
 
 class TabLink extends HTMLElement {
   connectedCallback() {
-    const tabId = Number(this.getAttribute('tab-id'));
-    const windowId = Number(this.getAttribute('window-id'));
-    const url = this.getAttribute('url') ?? '';
+    const tabId = Number(this.getAttribute("tab-id"));
+    const windowId = Number(this.getAttribute("window-id"));
+    const url = this.getAttribute("url") ?? "";
 
-    const template = document.getElementById('tab-link-template') as HTMLTemplateElement;
+    const template = document.getElementById(
+      "tab-link-template",
+    ) as HTMLTemplateElement;
     const content = template.content.cloneNode(true) as DocumentFragment;
-    const anchor = content.querySelector('.link') as HTMLAnchorElement;
+    const anchor = content.querySelector(".link") as HTMLAnchorElement;
 
-    setSoftWrappingTitle(anchor, this.getAttribute('title') || 'Untitled');
-    anchor.addEventListener('click', (event) => {
+    setSoftWrappingTitle(anchor, this.getAttribute("title") || "Untitled");
+    anchor.addEventListener("click", (event) => {
       event.preventDefault();
       void browser.tabs.update(tabId, { active: true });
       void browser.windows.update(windowId, { focused: true });
     });
 
-    const faviconOverride = this.getAttribute('favicon') ?? '';
+    const faviconOverride = this.getAttribute("favicon") ?? "";
     populateLink(content, url, faviconOverride);
     this.appendChild(content);
 
-    this.addEventListener('mouseenter', (event: MouseEvent) => {
+    this.addEventListener("mouseenter", (event: MouseEvent) => {
       void this.showPreview(url, tabId, event);
     });
 
-    this.addEventListener('mouseleave', () => {
+    this.addEventListener("mouseleave", () => {
       document
-        .querySelectorAll('.duplicate-highlight')
-        .forEach((el) => el.classList.remove('duplicate-highlight'));
-      document.querySelectorAll('.tab-preview').forEach((el) => el.remove());
+        .querySelectorAll(".duplicate-highlight")
+        .forEach((el) => el.classList.remove("duplicate-highlight"));
+      document.querySelectorAll(".tab-preview").forEach((el) => el.remove());
     });
   }
 
@@ -205,20 +226,21 @@ class TabLink extends HTMLElement {
       .querySelectorAll(`tab-link[url="${CSS.escape(url)}"]`)
       .forEach((el) => {
         if (el !== this) {
-          el.classList.add('duplicate-highlight');
+          el.classList.add("duplicate-highlight");
         }
       });
 
     const result = await browser.storage.local.get(TAB_PREVIEWS_KEY);
-    const previews = (result[TAB_PREVIEWS_KEY] as Record<string, string> | undefined) ?? {};
+    const previews =
+      (result[TAB_PREVIEWS_KEY] as Record<string, string> | undefined) ?? {};
     const dataUrl = previews[String(tabId)];
     if (!dataUrl) {
       return;
     }
 
-    const preview = document.createElement('div');
-    preview.className = 'tab-preview';
-    const image = document.createElement('img');
+    const preview = document.createElement("div");
+    preview.className = "tab-preview";
+    const image = document.createElement("img");
     image.src = dataUrl;
     preview.appendChild(image);
     document.body.appendChild(preview);
@@ -233,32 +255,32 @@ class TabLink extends HTMLElement {
   }
 }
 
-if (!customElements.get('bookmark-link')) {
-  customElements.define('bookmark-link', BookmarkLink);
+if (!customElements.get("bookmark-link")) {
+  customElements.define("bookmark-link", BookmarkLink);
 }
 
-if (!customElements.get('tab-link')) {
-  customElements.define('tab-link', TabLink);
+if (!customElements.get("tab-link")) {
+  customElements.define("tab-link", TabLink);
 }
 
 function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
   if (node.url) {
-    const li = document.createElement('li');
-    const link = document.createElement('bookmark-link');
-    link.setAttribute('url', node.url);
-    link.setAttribute('title', node.title || node.url);
+    const li = document.createElement("li");
+    const link = document.createElement("bookmark-link");
+    link.setAttribute("url", node.url);
+    link.setAttribute("title", node.title || node.url);
     li.appendChild(link);
     return li;
   }
 
   if (node.children && node.children.length > 0) {
-    const details = document.createElement('details');
-    const summary = document.createElement('summary');
-    summary.textContent = node.title || 'Bookmarks';
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = node.title || "Bookmarks";
     details.appendChild(summary);
     trackDetails(details, `bookmark:${node.id}`, false);
 
-    const ul = document.createElement('ul');
+    const ul = document.createElement("ul");
     for (const child of node.children) {
       const rendered = renderBookmarkNode(child);
       if (rendered) {
@@ -275,8 +297,8 @@ function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
 
 async function loadBookmarks() {
   const tree = await browser.bookmarks.getTree();
-  const section = document.getElementById('bookmarks-section') as HTMLElement;
-  const heading = section.querySelector('h2') as HTMLHeadingElement;
+  const section = document.getElementById("bookmarks-section") as HTMLElement;
+  const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
 
   const topFolders: BookmarkNode[] = [];
@@ -299,20 +321,20 @@ async function loadBookmarks() {
 }
 
 function createTabLi(tab: BrowserTab): HTMLLIElement {
-  const li = document.createElement('li');
-  const link = document.createElement('tab-link');
+  const li = document.createElement("li");
+  const link = document.createElement("tab-link");
 
   if (tab.id !== undefined) {
-    link.setAttribute('tab-id', String(tab.id));
+    link.setAttribute("tab-id", String(tab.id));
   }
   if (tab.windowId !== undefined) {
-    link.setAttribute('window-id', String(tab.windowId));
+    link.setAttribute("window-id", String(tab.windowId));
   }
-  link.setAttribute('title', tab.title || tab.url || '');
-  link.setAttribute('url', tab.url || '');
+  link.setAttribute("title", tab.title || tab.url || "");
+  link.setAttribute("url", tab.url || "");
 
   if (tab.favIconUrl) {
-    link.setAttribute('favicon', tab.favIconUrl);
+    link.setAttribute("favicon", tab.favIconUrl);
   }
 
   li.appendChild(link);
@@ -325,13 +347,17 @@ async function loadTabs() {
   const groups = await browser.tabGroups.query({});
   const groupMap = new Map(groups.map((group) => [group.id, group]));
 
-  const section = document.getElementById('tabs-section') as HTMLElement;
-  const heading = section.querySelector('h2') as HTMLHeadingElement;
+  const section = document.getElementById("tabs-section") as HTMLElement;
+  const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
 
   windows.sort((a, b) => {
-    const lastA = Math.max(...(a.tabs ?? []).map((tab) => tab.lastAccessed ?? 0));
-    const lastB = Math.max(...(b.tabs ?? []).map((tab) => tab.lastAccessed ?? 0));
+    const lastA = Math.max(
+      ...(a.tabs ?? []).map((tab) => tab.lastAccessed ?? 0),
+    );
+    const lastB = Math.max(
+      ...(b.tabs ?? []).map((tab) => tab.lastAccessed ?? 0),
+    );
     return lastB - lastA;
   });
 
@@ -341,7 +367,7 @@ async function loadTabs() {
       continue;
     }
 
-    const details = document.createElement('details');
+    const details = document.createElement("details");
     trackDetails(details, `window:${windowRef.id}`, true);
 
     const activeTab = tabs.find((tab) => tab.active);
@@ -349,14 +375,14 @@ async function loadTabs() {
       ? `${activeTab.title} (${tabs.length} tabs)`
       : `Window (${tabs.length} tabs)`;
 
-    const summary = document.createElement('summary');
+    const summary = document.createElement("summary");
     summary.textContent = windowLabel;
     if (windowRef.id === currentWindow.id) {
-      summary.classList.add('current-window');
+      summary.classList.add("current-window");
     }
     details.appendChild(summary);
 
-    const ul = document.createElement('ul');
+    const ul = document.createElement("ul");
 
     let currentGroupId = TAB_GROUP_ID_NONE;
     let groupUl: HTMLUListElement | null = null;
@@ -364,21 +390,21 @@ async function loadTabs() {
     for (const tab of tabs) {
       if (tab.groupId !== TAB_GROUP_ID_NONE && tab.groupId !== currentGroupId) {
         const group = groupMap.get(tab.groupId);
-        const groupDetails = document.createElement('details');
+        const groupDetails = document.createElement("details");
         const collapsed = group?.collapsed ?? false;
         trackDetails(groupDetails, `tabgroup:${tab.groupId}`, !collapsed);
 
-        const groupSummary = document.createElement('summary');
-        groupSummary.textContent = group?.title || 'Unnamed Group';
+        const groupSummary = document.createElement("summary");
+        groupSummary.textContent = group?.title || "Unnamed Group";
         if (group?.color) {
           groupSummary.classList.add(`group-${group.color}`);
         }
         groupDetails.appendChild(groupSummary);
 
-        groupUl = document.createElement('ul');
+        groupUl = document.createElement("ul");
         groupDetails.appendChild(groupUl);
 
-        const li = document.createElement('li');
+        const li = document.createElement("li");
         li.appendChild(groupDetails);
         ul.appendChild(li);
       }
@@ -401,14 +427,14 @@ async function loadTabs() {
 function initSettings(settings: UserSettings) {
   applyTheme(settings.theme);
 
-  const bar = document.getElementById('settings-bar') as HTMLElement;
+  const bar = document.getElementById("settings-bar") as HTMLElement;
   const radios = bar.querySelectorAll<HTMLInputElement>('input[name="theme"]');
   radios.forEach((radio) => {
     radio.checked = radio.value === settings.theme;
   });
 
   radios.forEach((radio) => {
-    radio.addEventListener('change', () => {
+    radio.addEventListener("change", () => {
       const theme = radio.value as Theme;
       applyTheme(theme);
       settings.theme = theme;
@@ -416,10 +442,14 @@ function initSettings(settings: UserSettings) {
     });
   });
 
-  const bookmarkSlider = bar.querySelector<HTMLInputElement>('input[name="bookmarkColumns"]');
-  const tabSlider = bar.querySelector<HTMLInputElement>('input[name="tabColumns"]');
-  const bookmarkValue = document.getElementById('bookmarkColumns-value');
-  const tabValue = document.getElementById('tabColumns-value');
+  const bookmarkSlider = bar.querySelector<HTMLInputElement>(
+    'input[name="bookmarkColumns"]',
+  );
+  const tabSlider = bar.querySelector<HTMLInputElement>(
+    'input[name="tabColumns"]',
+  );
+  const bookmarkValue = document.getElementById("bookmarkColumns-value");
+  const tabValue = document.getElementById("tabColumns-value");
 
   if (!bookmarkSlider || !tabSlider || !bookmarkValue || !tabValue) {
     return;
@@ -430,7 +460,7 @@ function initSettings(settings: UserSettings) {
   bookmarkValue.textContent = String(settings.bookmarkColumns);
   tabValue.textContent = String(settings.tabColumns);
 
-  bookmarkSlider.addEventListener('input', () => {
+  bookmarkSlider.addEventListener("input", () => {
     const value = Number(bookmarkSlider.value);
     settings.bookmarkColumns = value;
     currentSettings = settings;
@@ -439,7 +469,7 @@ function initSettings(settings: UserSettings) {
     void saveSettings(settings);
   });
 
-  tabSlider.addEventListener('input', () => {
+  tabSlider.addEventListener("input", () => {
     const value = Number(tabSlider.value);
     settings.tabColumns = value;
     currentSettings = settings;
@@ -448,27 +478,33 @@ function initSettings(settings: UserSettings) {
     void saveSettings(settings);
   });
 
-  document.getElementById('collapse-bookmarks')?.addEventListener('click', () => {
-    document.querySelectorAll<HTMLDetailsElement>('#bookmarks-section details').forEach((details) => {
-      details.open = false;
-    });
+  document
+    .getElementById("collapse-bookmarks")
+    ?.addEventListener("click", () => {
+      document
+        .querySelectorAll<HTMLDetailsElement>("#bookmarks-section details")
+        .forEach((details) => {
+          details.open = false;
+        });
 
-    for (const key in detailsState) {
-      if (key.startsWith('bookmark:')) {
-        detailsState[key] = false;
+      for (const key in detailsState) {
+        if (key.startsWith("bookmark:")) {
+          detailsState[key] = false;
+        }
       }
-    }
 
-    void saveState(detailsState);
-  });
-
-  document.getElementById('collapse-tabs')?.addEventListener('click', () => {
-    document.querySelectorAll<HTMLDetailsElement>('#tabs-section details').forEach((details) => {
-      details.open = false;
+      void saveState(detailsState);
     });
 
+  document.getElementById("collapse-tabs")?.addEventListener("click", () => {
+    document
+      .querySelectorAll<HTMLDetailsElement>("#tabs-section details")
+      .forEach((details) => {
+        details.open = false;
+      });
+
     for (const key in detailsState) {
-      if (key.startsWith('window:') || key.startsWith('tabgroup:')) {
+      if (key.startsWith("window:") || key.startsWith("tabgroup:")) {
         detailsState[key] = false;
       }
     }

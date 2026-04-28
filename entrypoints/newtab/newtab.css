@@ -1,39 +1,30 @@
 :root {
-  --color-link: #0060df;
-  --color-heading: #5a616d;
-  --color-summary: #2a313f;
-  --color-hostname: #7b8392;
-  --color-surface: #f8f9fb;
-  --color-text: #1f2532;
+  color-scheme: light dark;
 
-  --color-group-grey: #5f6368;
-  --color-group-blue: #1a73e8;
-  --color-group-red: #d93025;
-  --color-group-yellow: #f9ab00;
-  --color-group-green: #1e8e3e;
-  --color-group-pink: #d01884;
-  --color-group-purple: #9334e6;
-  --color-group-cyan: #007b83;
-  --color-group-orange: #e8710a;
+  --color-link: LinkText;
+  --color-heading: CanvasText;
+  --color-summary: CanvasText;
+  --color-hostname: GrayText;
+  --color-surface: Canvas;
+  --color-text: CanvasText;
+
+  --color-group-grey: GrayText;
+  --color-group-blue: LinkText;
+  --color-group-red: MarkText;
+  --color-group-yellow: Mark;
+  --color-group-green: AccentColor;
+  --color-group-pink: AccentColor;
+  --color-group-purple: AccentColor;
+  --color-group-cyan: AccentColor;
+  --color-group-orange: AccentColor;
 }
 
 html.dark {
-  --color-link: #84c0ff;
-  --color-heading: #a8b0be;
-  --color-summary: #d7dce6;
-  --color-hostname: #8f97a6;
-  --color-surface: #131821;
-  --color-text: #e5e9f1;
+  color-scheme: dark;
+}
 
-  --color-group-grey: #9aa0a6;
-  --color-group-blue: #8ab4f8;
-  --color-group-red: #f28b82;
-  --color-group-yellow: #fdd663;
-  --color-group-green: #81c995;
-  --color-group-pink: #f48fb1;
-  --color-group-purple: #c58af9;
-  --color-group-cyan: #78d9ec;
-  --color-group-orange: #fcad70;
+html.light {
+  color-scheme: light;
 }
 
 * {
@@ -43,10 +34,15 @@ html.dark {
 body {
   margin: 0;
   padding: 24px 24px 76px;
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   line-height: 1.45;
-  color: var(--color-text);
-  background: radial-gradient(circle at top right, #ffffff 0%, var(--color-surface) 55%);
+  color: CanvasText;
+  background: Canvas;
 }
 
 #layout {
@@ -192,8 +188,9 @@ tab-link.duplicate-highlight {
   padding: 0.65rem;
   font-size: 0.82rem;
   color: var(--color-hostname);
-  border-top: 1px solid color-mix(in srgb, var(--color-hostname) 25%, transparent);
-  background: color-mix(in srgb, var(--color-surface) 82%, #ffffff);
+  border-top: 1px solid
+    color-mix(in srgb, var(--color-hostname) 25%, transparent);
+  background: color-mix(in srgb, Canvas 88%, transparent);
   backdrop-filter: blur(6px);
 }
 
@@ -228,8 +225,8 @@ tab-link.duplicate-highlight {
   width: 320px;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(128, 128, 128, 0.28);
+  box-shadow: 0 12px 30px color-mix(in srgb, CanvasText 28%, transparent);
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
   pointer-events: none;
 }
 
