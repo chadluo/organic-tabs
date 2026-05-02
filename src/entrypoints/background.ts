@@ -1,5 +1,10 @@
-type SortMode = "title" | "website" | "lastAccessed";
-type Direction = "up" | "down" | "left" | "right";
+import {
+  SETTINGS_KEY,
+  loadSettings,
+  type Direction,
+  type SortMode,
+} from "../utils/settings";
+
 type TabPreviews = Record<string, string>;
 
 interface Point {
@@ -31,7 +36,6 @@ interface BrowserWindow {
 }
 
 const PREVIEWS_KEY = "tabPreviews";
-const SETTINGS_KEY = "userSettings";
 const TAB_GROUP_ID_NONE = -1;
 
 const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -49,18 +53,15 @@ const GENERIC_SLDS = new Set([
 export default defineBackground(() => {
   browser.commands.onCommand.addListener(async (command) => {
     if (command === "sort-tabs") {
-      const data = await browser.storage.local.get(SETTINGS_KEY);
-      const settings = data[SETTINGS_KEY] as Record<string, unknown> | undefined;
-      if (settings?.tabSortEnabled === false) return;
-      const defaultMode = (settings?.defaultSortMode as SortMode | undefined) ?? "website";
-      await sortTabsByMode(defaultMode);
+      const settings = await loadSettings();
+      if (settings.tabSortEnabled === false) return;
+      await sortTabsByMode(settings.defaultSortMode);
       return;
     }
 
     if (command.startsWith("move-tab-")) {
-      const data = await browser.storage.local.get(SETTINGS_KEY);
-      const settings = data[SETTINGS_KEY] as Record<string, unknown> | undefined;
-      if (settings?.tabShiftEnabled === false) return;
+      const settings = await loadSettings();
+      if (settings.tabShiftEnabled === false) return;
       const direction = command.replace("move-tab-", "") as Direction;
       if (isDirection(direction)) {
         await moveActiveTabToDirection(direction);
@@ -70,23 +71,22 @@ export default defineBackground(() => {
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     (async () => {
-      const data = await browser.storage.local.get(SETTINGS_KEY);
-      const settings = data[SETTINGS_KEY] as Record<string, unknown> | undefined;
+      const settings = await loadSettings();
 
       if (message?.action === "sortByTitle") {
-        if (settings?.tabSortEnabled !== false) await sortByTitle();
+        if (settings.tabSortEnabled !== false) await sortByTitle();
         sendResponse({ success: true });
         return;
       }
 
       if (message?.action === "sortByWebsite") {
-        if (settings?.tabSortEnabled !== false) await sortByWebsite();
+        if (settings.tabSortEnabled !== false) await sortByWebsite();
         sendResponse({ success: true });
         return;
       }
 
       if (message?.action === "sortByLastAccessed") {
-        if (settings?.tabSortEnabled !== false) await sortByLastAccessed();
+        if (settings.tabSortEnabled !== false) await sortByLastAccessed();
         sendResponse({ success: true });
         return;
       }
@@ -95,7 +95,7 @@ export default defineBackground(() => {
         message?.action === "moveTabDirection" &&
         isDirection(message?.direction)
       ) {
-        if (settings?.tabShiftEnabled !== false)
+        if (settings.tabShiftEnabled !== false)
           await moveActiveTabToDirection(message.direction);
         sendResponse({ success: true });
         return;

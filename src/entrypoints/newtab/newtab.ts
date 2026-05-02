@@ -1,22 +1,17 @@
-const SETTINGS_KEY = "userSettings";
+import {
+  SETTINGS_KEY,
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  type Theme,
+  type UserSettings,
+} from "../../utils/settings";
+
 const STORAGE_KEY = "detailsState";
 const TAB_PREVIEWS_KEY = "tabPreviews";
 const TAB_GROUP_ID_NONE = -1;
 
-type Theme = "system" | "light" | "dark";
-type SortMode = "title" | "website" | "lastAccessed";
-
 type DetailsState = Record<string, boolean>;
-
-interface UserSettings {
-  theme: Theme;
-  bookmarkColumns: number;
-  tabColumns: number;
-  defaultSortMode: SortMode;
-  newTabEnabled: boolean;
-  tabSortEnabled: boolean;
-  tabShiftEnabled: boolean;
-}
 
 interface BookmarkNode {
   id: string;
@@ -36,30 +31,9 @@ interface BrowserTab {
   lastAccessed?: number;
 }
 
-const defaultSettings: UserSettings = {
-  theme: "system",
-  bookmarkColumns: 1,
-  tabColumns: 1,
-  defaultSortMode: "website",
-  newTabEnabled: true,
-  tabSortEnabled: true,
-  tabShiftEnabled: true,
-};
-
 let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
 let mediaQuery: MediaQueryList | null = null;
-
-function loadSettings(): Promise<UserSettings> {
-  return browser.storage.local.get(SETTINGS_KEY).then((result) => ({
-    ...defaultSettings,
-    ...(result[SETTINGS_KEY] as Partial<UserSettings> | undefined),
-  }));
-}
-
-function saveSettings(settings: UserSettings) {
-  return browser.storage.local.set({ [SETTINGS_KEY]: settings });
-}
 
 function loadState(): Promise<DetailsState> {
   return browser.storage.local

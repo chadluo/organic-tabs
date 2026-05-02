@@ -1,44 +1,20 @@
 export {};
 
-type SortMode = "title" | "website" | "lastAccessed";
-type Theme = "system" | "light" | "dark";
-type Direction = "up" | "down" | "left" | "right";
-
-const SETTINGS_KEY = "userSettings";
-
-interface UserSettings {
-  theme: Theme;
-  bookmarkColumns: number;
-  tabColumns: number;
-  defaultSortMode: SortMode;
-  newTabEnabled: boolean;
-  tabSortEnabled: boolean;
-  tabShiftEnabled: boolean;
-}
-
-const defaultSettings: UserSettings = {
-  theme: "system",
-  bookmarkColumns: 1,
-  tabColumns: 1,
-  defaultSortMode: "website",
-  newTabEnabled: true,
-  tabSortEnabled: true,
-  tabShiftEnabled: true,
-};
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  type Direction,
+  type SortMode,
+  type Theme,
+  type UserSettings,
+} from "../../utils/settings";
 
 let settings = { ...defaultSettings };
 
-async function loadSettings(): Promise<UserSettings> {
-  const data = await browser.storage.local.get(SETTINGS_KEY);
-  return {
-    ...defaultSettings,
-    ...(data[SETTINGS_KEY] as Partial<UserSettings> | undefined),
-  };
-}
-
 async function updateSettings(patch: Partial<UserSettings>) {
   settings = { ...settings, ...patch };
-  await browser.storage.local.set({ [SETTINGS_KEY]: settings });
+  await saveSettings(settings);
 }
 
 async function sendBackgroundAction(message: Record<string, unknown>) {
