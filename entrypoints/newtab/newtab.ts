@@ -4,6 +4,7 @@ const TAB_PREVIEWS_KEY = "tabPreviews";
 const TAB_GROUP_ID_NONE = -1;
 
 type Theme = "system" | "light" | "dark";
+type SortMode = "title" | "website" | "lastAccessed";
 
 type DetailsState = Record<string, boolean>;
 
@@ -11,6 +12,10 @@ interface UserSettings {
   theme: Theme;
   bookmarkColumns: number;
   tabColumns: number;
+  defaultSortMode: SortMode;
+  newTabEnabled: boolean;
+  tabSortEnabled: boolean;
+  tabShiftEnabled: boolean;
 }
 
 interface BookmarkNode {
@@ -35,6 +40,10 @@ const defaultSettings: UserSettings = {
   theme: "system",
   bookmarkColumns: 1,
   tabColumns: 1,
+  defaultSortMode: "website",
+  newTabEnabled: true,
+  tabSortEnabled: true,
+  tabShiftEnabled: true,
 };
 
 let detailsState: DetailsState = {};
