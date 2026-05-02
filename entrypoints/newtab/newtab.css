@@ -33,7 +33,7 @@ html.light {
 
 body {
   margin: 0;
-  padding: 24px 24px 76px;
+  padding: 24px;
   font-family:
     ui-sans-serif,
     -apple-system,
@@ -176,48 +176,6 @@ tab-link.duplicate-highlight {
   color: var(--color-group-orange);
 }
 
-#settings-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0.65rem;
-  font-size: 0.82rem;
-  color: var(--color-hostname);
-  border-top: 1px solid
-    color-mix(in srgb, var(--color-hostname) 25%, transparent);
-  background: color-mix(in srgb, Canvas 88%, transparent);
-  backdrop-filter: blur(6px);
-}
-
-.settings-group {
-  display: flex;
-  gap: 0.55rem;
-  align-items: center;
-}
-
-.settings-group label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-#settings-bar button {
-  cursor: pointer;
-  border: 1px solid color-mix(in srgb, var(--color-hostname) 30%, transparent);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  padding: 0.2rem 0.45rem;
-}
-
-#settings-bar button:hover {
-  background: color-mix(in srgb, var(--color-hostname) 10%, transparent);
-}
 
 .tab-preview {
   position: fixed;
@@ -238,7 +196,7 @@ tab-link.duplicate-highlight {
 
 @media (max-width: 980px) {
   body {
-    padding: 14px 14px 150px;
+    padding: 14px;
   }
 
   #layout {
@@ -249,11 +207,5 @@ tab-link.duplicate-highlight {
   #tabs-section {
     width: 100%;
     columns: 1 !important;
-  }
-
-  #settings-bar {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    padding: 0.7rem;
   }
 }

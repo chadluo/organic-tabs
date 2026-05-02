@@ -433,93 +433,10 @@ async function loadTabs() {
   }
 }
 
-function initSettings(settings: UserSettings) {
-  applyTheme(settings.theme);
-
-  const bar = document.getElementById("settings-bar") as HTMLElement;
-  const radios = bar.querySelectorAll<HTMLInputElement>('input[name="theme"]');
-  radios.forEach((radio) => {
-    radio.checked = radio.value === settings.theme;
-  });
-
-  radios.forEach((radio) => {
-    radio.addEventListener("change", () => {
-      const theme = radio.value as Theme;
-      applyTheme(theme);
-      settings.theme = theme;
-      void saveSettings(settings);
-    });
-  });
-
-  const bookmarkSlider = bar.querySelector<HTMLInputElement>(
-    'input[name="bookmarkColumns"]',
-  );
-  const tabSlider = bar.querySelector<HTMLInputElement>(
-    'input[name="tabColumns"]',
-  );
-  const bookmarkValue = document.getElementById("bookmarkColumns-value");
-  const tabValue = document.getElementById("tabColumns-value");
-
-  if (!bookmarkSlider || !tabSlider || !bookmarkValue || !tabValue) {
-    return;
-  }
-
-  bookmarkSlider.value = String(settings.bookmarkColumns);
-  tabSlider.value = String(settings.tabColumns);
-  bookmarkValue.textContent = String(settings.bookmarkColumns);
-  tabValue.textContent = String(settings.tabColumns);
-
-  bookmarkSlider.addEventListener("input", () => {
-    const value = Number(bookmarkSlider.value);
-    settings.bookmarkColumns = value;
-    currentSettings = settings;
-    bookmarkValue.textContent = String(value);
-    applyLayout(settings);
-    void saveSettings(settings);
-  });
-
-  tabSlider.addEventListener("input", () => {
-    const value = Number(tabSlider.value);
-    settings.tabColumns = value;
-    currentSettings = settings;
-    tabValue.textContent = String(value);
-    applyLayout(settings);
-    void saveSettings(settings);
-  });
-
-  document
-    .getElementById("collapse-bookmarks")
-    ?.addEventListener("click", () => {
-      document
-        .querySelectorAll<HTMLDetailsElement>("#bookmarks-section details")
-        .forEach((details) => {
-          details.open = false;
-        });
-
-      for (const key in detailsState) {
-        if (key.startsWith("bookmark:")) {
-          detailsState[key] = false;
-        }
-      }
-
-      void saveState(detailsState);
-    });
-
-  document.getElementById("collapse-tabs")?.addEventListener("click", () => {
-    document
-      .querySelectorAll<HTMLDetailsElement>("#tabs-section details")
-      .forEach((details) => {
-        details.open = false;
-      });
-
-    for (const key in detailsState) {
-      if (key.startsWith("window:") || key.startsWith("tabgroup:")) {
-        detailsState[key] = false;
-      }
-    }
-
-    void saveState(detailsState);
-  });
+function onSettingsChanged(newSettings: UserSettings) {
+  applyTheme(newSettings.theme);
+  applyLayout(newSettings);
+  currentSettings = newSettings;
 }
 
 browser.tabs.onCreated.addListener(() => {
@@ -560,10 +477,27 @@ browser.bookmarks.onMoved.addListener(() => {
   void loadBookmarks();
 });
 
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes[SETTINGS_KEY]) {
+    return;
+  }
+  const updated = {
+    ...defaultSettings,
+    ...(changes[SETTINGS_KEY].newValue as Partial<UserSettings> | undefined),
+  };
+  onSettingsChanged(updated);
+});
+
 async function init() {
   const settings = await loadSettings();
   currentSettings = settings;
-  initSettings(settings);
+
+  if (!settings.newTabEnabled) {
+    void browser.tabs.update({ url: "chrome://new-tab-page" });
+    return;
+  }
+
+  applyTheme(settings.theme);
   applyLayout(settings);
 
   detailsState = await loadState();
