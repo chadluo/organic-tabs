@@ -70,20 +70,23 @@ export default defineBackground(() => {
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     (async () => {
+      const data = await browser.storage.local.get(SETTINGS_KEY);
+      const settings = data[SETTINGS_KEY] as Record<string, unknown> | undefined;
+
       if (message?.action === "sortByTitle") {
-        await sortByTitle();
+        if (settings?.tabSortEnabled !== false) await sortByTitle();
         sendResponse({ success: true });
         return;
       }
 
       if (message?.action === "sortByWebsite") {
-        await sortByWebsite();
+        if (settings?.tabSortEnabled !== false) await sortByWebsite();
         sendResponse({ success: true });
         return;
       }
 
       if (message?.action === "sortByLastAccessed") {
-        await sortByLastAccessed();
+        if (settings?.tabSortEnabled !== false) await sortByLastAccessed();
         sendResponse({ success: true });
         return;
       }
@@ -92,7 +95,8 @@ export default defineBackground(() => {
         message?.action === "moveTabDirection" &&
         isDirection(message?.direction)
       ) {
-        await moveActiveTabToDirection(message.direction);
+        if (settings?.tabShiftEnabled !== false)
+          await moveActiveTabToDirection(message.direction);
         sendResponse({ success: true });
         return;
       }

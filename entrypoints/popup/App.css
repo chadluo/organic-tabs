@@ -3,6 +3,10 @@ body {
   background: #ffffff;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .popup-root {
   width: 360px;
   padding: 14px;
