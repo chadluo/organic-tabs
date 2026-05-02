@@ -1,8 +1,7 @@
 import { defineConfig } from "wxt";
 
 export default defineConfig({
-  modules: ["@wxt-dev/module-react"],
-  manifest: {
+manifest: {
     name: "Organic Tabs",
     description: "Unified new tab page, tab sorter, and tab shifter extension.",
     version: "1.0.0",
