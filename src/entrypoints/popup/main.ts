@@ -9,25 +9,13 @@ import {
   type Theme,
   type UserSettings,
 } from "../../utils/settings";
+import { sendToBackground, sortModeToAction } from "../../utils/messages";
 
 let settings = { ...defaultSettings };
 
 async function updateSettings(patch: Partial<UserSettings>) {
   settings = { ...settings, ...patch };
   await saveSettings(settings);
-}
-
-async function sendBackgroundAction(message: Record<string, unknown>) {
-  const response = await browser.runtime.sendMessage(message);
-  if (!response?.success) {
-    throw new Error(response?.error ?? "Background action failed.");
-  }
-}
-
-function actionToMessage(mode: SortMode): string {
-  if (mode === "title") return "sortByTitle";
-  if (mode === "lastAccessed") return "sortByLastAccessed";
-  return "sortByWebsite";
 }
 
 function setStatus(el: HTMLElement, text: string) {
@@ -142,7 +130,7 @@ async function init() {
     const label = mode === "lastAccessed" ? "last accessed" : mode;
     setStatus(sortStatus, `Sorting by ${label}…`);
     try {
-      await sendBackgroundAction({ action: actionToMessage(mode) });
+      await sendToBackground(sortModeToAction(mode));
       setStatus(sortStatus, `Sorted by ${label}.`);
     } catch {
       setStatus(sortStatus, "Error: failed to sort tabs.");
@@ -170,7 +158,7 @@ async function init() {
   async function moveTab(direction: Direction) {
     setStatus(shiftStatus, `Moving tab ${direction}…`);
     try {
-      await sendBackgroundAction({ action: "moveTabDirection", direction });
+      await sendToBackground({ action: "moveTabDirection", direction });
       setStatus(shiftStatus, `Moved tab ${direction}.`);
     } catch {
       setStatus(shiftStatus, "Error: failed to move tab.");

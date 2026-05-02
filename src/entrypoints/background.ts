@@ -6,6 +6,7 @@ import {
   sortByLastAccessed,
 } from "../utils/sort";
 import { findCyclicTarget, findGeometricTarget } from "../utils/shift";
+import type { BackgroundMessage, BackgroundResponse } from "../utils/messages";
 
 type TabPreviews = Record<string, string>;
 
@@ -32,49 +33,48 @@ export default defineBackground(() => {
     }
   });
 
-  browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    (async () => {
-      const settings = await loadSettings();
+  browser.runtime.onMessage.addListener(
+    (rawMessage, _sender, sendResponse) => {
+      const message = rawMessage as BackgroundMessage;
 
-      if (message?.action === "sortByTitle") {
-        if (settings.tabSortEnabled !== false) await sortByTitle();
-        sendResponse({ success: true });
-        return;
-      }
+      (async (): Promise<BackgroundResponse> => {
+        const settings = await loadSettings();
 
-      if (message?.action === "sortByWebsite") {
-        if (settings.tabSortEnabled !== false) await sortByWebsite();
-        sendResponse({ success: true });
-        return;
-      }
+        if (message.action === "sortByTitle") {
+          if (settings.tabSortEnabled !== false) await sortByTitle();
+          return { success: true };
+        }
 
-      if (message?.action === "sortByLastAccessed") {
-        if (settings.tabSortEnabled !== false) await sortByLastAccessed();
-        sendResponse({ success: true });
-        return;
-      }
+        if (message.action === "sortByWebsite") {
+          if (settings.tabSortEnabled !== false) await sortByWebsite();
+          return { success: true };
+        }
 
-      if (
-        message?.action === "moveTabDirection" &&
-        isDirection(message?.direction)
-      ) {
-        if (settings.tabShiftEnabled !== false)
-          await moveActiveTabToDirection(message.direction);
-        sendResponse({ success: true });
-        return;
-      }
+        if (message.action === "sortByLastAccessed") {
+          if (settings.tabSortEnabled !== false) await sortByLastAccessed();
+          return { success: true };
+        }
 
-      sendResponse({ success: false, error: "Unknown action." });
-    })().catch((error: unknown) => {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Unknown background action error";
-      sendResponse({ success: false, error: errorMessage });
-    });
+        if (message.action === "moveTabDirection") {
+          if (settings.tabShiftEnabled !== false)
+            await moveActiveTabToDirection(message.direction);
+          return { success: true };
+        }
 
-    return true;
-  });
+        return { success: false, error: "Unknown action." };
+      })()
+        .then(sendResponse)
+        .catch((error: unknown) => {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Unknown background action error";
+          sendResponse({ success: false, error: errorMessage });
+        });
+
+      return true;
+    },
+  );
 
   browser.tabs.onActivated.addListener((activeInfo) => {
     const existing = captureTimers.get(activeInfo.windowId);
