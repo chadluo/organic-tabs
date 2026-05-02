@@ -11,7 +11,7 @@ h1 {
 }
 
 h2 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -20,6 +20,56 @@ h2 {
 
 .section {
   margin-bottom: 14px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #5c6573;
+  cursor: pointer;
+}
+
+.sub-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-label {
+  font-size: 12px;
+  color: #5c6573;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+}
+
+.slider-value {
+  min-width: 16px;
+  text-align: right;
+  font-size: 13px;
 }
 
 .button-grid {
@@ -58,8 +108,14 @@ button:hover {
   font-size: 13px;
 }
 
+.radio-inline {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
 .status {
-  margin: 6px 0;
+  margin: 0;
   padding: 8px;
   border-radius: 8px;
   font-size: 12px;
@@ -76,7 +132,7 @@ button:hover {
 }
 
 .shortcut {
-  margin: 6px 0 0;
+  margin: 0;
   font-size: 11px;
   color: #657084;
 }
