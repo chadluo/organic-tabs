@@ -31,7 +31,7 @@ interface BrowserWindow {
 }
 
 const PREVIEWS_KEY = "tabPreviews";
-const DEFAULT_SORT_MODE_KEY = "defaultSortMode";
+const SETTINGS_KEY = "userSettings";
 const TAB_GROUP_ID_NONE = -1;
 
 const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();
@@ -49,14 +49,18 @@ const GENERIC_SLDS = new Set([
 export default defineBackground(() => {
   browser.commands.onCommand.addListener(async (command) => {
     if (command === "sort-tabs") {
-      const data = await browser.storage.sync.get(DEFAULT_SORT_MODE_KEY);
-      const defaultMode =
-        (data[DEFAULT_SORT_MODE_KEY] as SortMode | undefined) ?? "website";
+      const data = await browser.storage.local.get(SETTINGS_KEY);
+      const settings = data[SETTINGS_KEY] as Record<string, unknown> | undefined;
+      if (settings?.tabSortEnabled === false) return;
+      const defaultMode = (settings?.defaultSortMode as SortMode | undefined) ?? "website";
       await sortTabsByMode(defaultMode);
       return;
     }
 
     if (command.startsWith("move-tab-")) {
+      const data = await browser.storage.local.get(SETTINGS_KEY);
+      const settings = data[SETTINGS_KEY] as Record<string, unknown> | undefined;
+      if (settings?.tabShiftEnabled === false) return;
       const direction = command.replace("move-tab-", "") as Direction;
       if (isDirection(direction)) {
         await moveActiveTabToDirection(direction);
