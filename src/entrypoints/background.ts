@@ -5,27 +5,9 @@ import {
   sortByWebsite,
   sortByLastAccessed,
 } from "../utils/sort";
+import { findCyclicTarget, findGeometricTarget } from "../utils/shift";
 
 type TabPreviews = Record<string, string>;
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface EdgeMidpoints {
-  current: Point;
-  candidate: Point;
-}
-
-interface BrowserWindow {
-  id?: number;
-  state?: string;
-  left?: number;
-  top?: number;
-  width?: number;
-  height?: number;
-}
 
 const PREVIEWS_KEY = "tabPreviews";
 
@@ -195,87 +177,4 @@ async function moveActiveTabToDirection(direction: Direction) {
     browser.tabs.update(activeTab.id, { active: true }),
     browser.windows.update(targetWindow.id, { focused: true }),
   ]);
-}
-
-function findCyclicTarget(
-  windows: BrowserWindow[],
-  currentId: number,
-  direction: Direction,
-): BrowserWindow | null {
-  const sorted = [...windows].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-  const idx = sorted.findIndex((windowRef) => windowRef.id === currentId);
-  if (idx < 0) {
-    return null;
-  }
-
-  const isPrev = direction === "up" || direction === "left";
-  const nextIdx = isPrev
-    ? (idx - 1 + sorted.length) % sorted.length
-    : (idx + 1) % sorted.length;
-
-  return sorted[nextIdx] ?? null;
-}
-
-function getEdgeMidpoints(
-  windowRef: BrowserWindow,
-  direction: Direction,
-): EdgeMidpoints {
-  const left = windowRef.left ?? 0;
-  const top = windowRef.top ?? 0;
-  const width = windowRef.width ?? 0;
-  const height = windowRef.height ?? 0;
-
-  switch (direction) {
-    case "right":
-      return {
-        current: { x: left + width, y: top + height / 2 },
-        candidate: { x: left, y: top + height / 2 },
-      };
-    case "left":
-      return {
-        current: { x: left, y: top + height / 2 },
-        candidate: { x: left + width, y: top + height / 2 },
-      };
-    case "down":
-      return {
-        current: { x: left + width / 2, y: top + height },
-        candidate: { x: left + width / 2, y: top },
-      };
-    case "up":
-      return {
-        current: { x: left + width / 2, y: top },
-        candidate: { x: left + width / 2, y: top + height },
-      };
-  }
-}
-
-function findGeometricTarget(
-  windows: BrowserWindow[],
-  currentWindow: BrowserWindow,
-  direction: Direction,
-): BrowserWindow | null {
-  const { current: refPoint } = getEdgeMidpoints(currentWindow, direction);
-
-  const inRange = windows.filter(
-    (windowRef) => windowRef.id !== currentWindow.id,
-  );
-  if (inRange.length === 0) {
-    return null;
-  }
-
-  const isHorizontal = direction === "left" || direction === "right";
-
-  inRange.sort((a, b) => {
-    const { candidate: candidateA } = getEdgeMidpoints(a, direction);
-    const { candidate: candidateB } = getEdgeMidpoints(b, direction);
-    const distanceA = isHorizontal
-      ? Math.abs(candidateA.x - refPoint.x)
-      : Math.abs(candidateA.y - refPoint.y);
-    const distanceB = isHorizontal
-      ? Math.abs(candidateB.x - refPoint.x)
-      : Math.abs(candidateB.y - refPoint.y);
-    return distanceA - distanceB;
-  });
-
-  return inRange[0] ?? null;
 }
