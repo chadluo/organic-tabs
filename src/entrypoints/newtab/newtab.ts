@@ -6,9 +6,9 @@ import {
   type UserSettings,
 } from "../../utils/settings";
 import { sortTabsByMode } from "../../utils/sort";
+import { retrievePreview } from "../../utils/preview";
 
 const STORAGE_KEY = "detailsState";
-const TAB_PREVIEWS_KEY = "tabPreviews";
 
 type DetailsState = Record<string, boolean>;
 
@@ -280,10 +280,7 @@ class TabLink extends HTMLElement {
         }
       });
 
-    const result = await browser.storage.local.get(TAB_PREVIEWS_KEY);
-    const previews =
-      (result[TAB_PREVIEWS_KEY] as Record<string, string> | undefined) ?? {};
-    const dataUrl = previews[String(tabId)];
+    const dataUrl = await retrievePreview(tabId);
     if (!dataUrl) {
       return;
     }

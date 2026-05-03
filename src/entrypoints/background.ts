@@ -7,10 +7,7 @@ import {
 } from "../utils/sort";
 import { findCyclicTarget, findGeometricTarget } from "../utils/shift";
 import type { BackgroundMessage, BackgroundResponse } from "../utils/messages";
-
-type TabPreviews = Record<string, string>;
-
-const PREVIEWS_KEY = "tabPreviews";
+import { storePreview, evictPreview } from "../utils/preview";
 
 const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
@@ -92,10 +89,7 @@ export default defineBackground(() => {
 
   browser.tabs.onRemoved.addListener(async (tabId) => {
     try {
-      const result = await browser.storage.local.get(PREVIEWS_KEY);
-      const previews = (result[PREVIEWS_KEY] as TabPreviews | undefined) ?? {};
-      delete previews[String(tabId)];
-      await browser.storage.local.set({ [PREVIEWS_KEY]: previews });
+      await evictPreview(tabId);
     } catch {
       // Ignore cleanup errors for removed tabs.
     }
@@ -128,10 +122,7 @@ async function captureActiveTabPreview(windowId: number, tabId: number) {
       quality: 40,
     });
 
-    const result = await browser.storage.local.get(PREVIEWS_KEY);
-    const previews = (result[PREVIEWS_KEY] as TabPreviews | undefined) ?? {};
-    previews[String(tabId)] = dataUrl;
-    await browser.storage.local.set({ [PREVIEWS_KEY]: previews });
+    await storePreview(tabId, dataUrl);
   } catch {
     // Tab can close or become non-capturable before the delayed capture runs.
   }
