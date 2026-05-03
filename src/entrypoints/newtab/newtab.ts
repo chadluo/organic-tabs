@@ -2,7 +2,6 @@ import {
   SETTINGS_KEY,
   defaultSettings,
   loadSettings,
-  saveSettings,
   type Theme,
   type UserSettings,
 } from "../../utils/settings";
@@ -10,7 +9,6 @@ import { sortTabsByMode } from "../../utils/sort";
 
 const STORAGE_KEY = "detailsState";
 const TAB_PREVIEWS_KEY = "tabPreviews";
-const TAB_GROUP_ID_NONE = -1;
 
 type DetailsState = Record<string, boolean>;
 
@@ -155,16 +153,16 @@ async function applyTabDrop(
   targetGroupId?: number,
 ) {
   const crossWindow = sourceWindowId !== targetWindowId;
-  const targetGroup = targetGroupId ?? TAB_GROUP_ID_NONE;
+  const targetGroup = targetGroupId ?? browser.tabGroups.TAB_GROUP_ID_NONE;
   if (!crossWindow && sourceGroupId === targetGroup) return;
 
   if (crossWindow) {
     await browser.tabs.move(tabId, { windowId: targetWindowId, index: -1 });
   }
 
-  if (targetGroup !== TAB_GROUP_ID_NONE) {
+  if (targetGroup !== browser.tabGroups.TAB_GROUP_ID_NONE) {
     await browser.tabs.group({ tabIds: [tabId], groupId: targetGroup });
-  } else if (!crossWindow && sourceGroupId !== TAB_GROUP_ID_NONE) {
+  } else if (!crossWindow && sourceGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
     await browser.tabs.ungroup([tabId]);
   }
   void loadTabs();
@@ -381,7 +379,7 @@ function createTabLi(tab: BrowserTab): HTMLLIElement {
       JSON.stringify({
         tabId: tab.id,
         sourceWindowId: tab.windowId,
-        sourceGroupId: tab.groupId ?? TAB_GROUP_ID_NONE,
+        sourceGroupId: tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE,
       }),
     );
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
@@ -471,11 +469,11 @@ async function loadTabs() {
 
     const ul = document.createElement("ul");
 
-    let currentGroupId = TAB_GROUP_ID_NONE;
+    let currentGroupId: number = browser.tabGroups.TAB_GROUP_ID_NONE;
     let groupUl: HTMLUListElement | null = null;
 
     for (const tab of tabs) {
-      if (tab.groupId !== TAB_GROUP_ID_NONE && tab.groupId !== currentGroupId) {
+      if (tab.groupId !== browser.tabGroups.TAB_GROUP_ID_NONE && tab.groupId !== currentGroupId) {
         const group = groupMap.get(tab.groupId);
         const groupDetails = document.createElement("details");
         const collapsed = group?.collapsed ?? false;
@@ -499,11 +497,11 @@ async function loadTabs() {
         ul.appendChild(li);
       }
 
-      if (tab.groupId !== TAB_GROUP_ID_NONE) {
+      if (tab.groupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
         currentGroupId = tab.groupId;
         groupUl?.appendChild(createTabLi(tab));
       } else {
-        currentGroupId = TAB_GROUP_ID_NONE;
+        currentGroupId = browser.tabGroups.TAB_GROUP_ID_NONE;
         groupUl = null;
         ul.appendChild(createTabLi(tab));
       }

@@ -9,7 +9,6 @@ export interface SortableTab {
   lastAccessed?: number;
 }
 
-const TAB_GROUP_ID_NONE = -1;
 
 const GENERIC_SLDS = new Set([
   "co",
@@ -103,21 +102,44 @@ export async function sortTabs(
   const tabs = await browser.tabs.query(queryOptions);
   const pinnedTabs = tabs.filter((tab) => tab.pinned);
   const groupedTabs = tabs.filter(
-    (tab) => !tab.pinned && tab.groupId !== TAB_GROUP_ID_NONE,
+    (tab) => !tab.pinned && tab.groupId !== browser.tabGroups.TAB_GROUP_ID_NONE,
   );
   const ungroupedTabs = tabs.filter(
-    (tab) => !tab.pinned && tab.groupId === TAB_GROUP_ID_NONE,
+    (tab) => !tab.pinned && tab.groupId === browser.tabGroups.TAB_GROUP_ID_NONE,
   );
 
   const groupIds = [...new Set(groupedTabs.map((tab) => tab.groupId))];
   const groupSizes = new Map<number, number>();
   for (const tab of groupedTabs) {
-    const groupId = tab.groupId ?? TAB_GROUP_ID_NONE;
+    const groupId = tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE;
     groupSizes.set(groupId, (groupSizes.get(groupId) ?? 0) + 1);
   }
 
+  // Build sort units: plain tabs as single-tab units, split clusters as
+  // multi-tab units keyed by the lowest-index tab in the split.
+  type Tab = (typeof tabs)[0];
+  const splitClusters = new Map<number, Tab[]>();
+  const sortUnits: { key: Tab; members: Tab[] }[] = [];
+
+  for (const tab of ungroupedTabs) {
+    const splitId = tab.splitViewId ?? browser.tabs.SPLIT_VIEW_ID_NONE;
+    if (splitId !== browser.tabs.SPLIT_VIEW_ID_NONE) {
+      if (!splitClusters.has(splitId)) {
+        splitClusters.set(splitId, []);
+      }
+      splitClusters.get(splitId)!.push(tab);
+    } else {
+      sortUnits.push({ key: tab, members: [tab] });
+    }
+  }
+
+  for (const cluster of splitClusters.values()) {
+    cluster.sort((a, b) => a.index - b.index);
+    sortUnits.push({ key: cluster[0], members: cluster });
+  }
+
   pinnedTabs.sort(compareFn);
-  ungroupedTabs.sort(compareFn);
+  sortUnits.sort((a, b) => compareFn(a.key, b.key));
 
   for (let i = 0; i < pinnedTabs.length; i += 1) {
     const tabId = pinnedTabs[i].id;
@@ -128,16 +150,20 @@ export async function sortTabs(
 
   let groupTargetIndex = pinnedTabs.length;
   for (const groupId of groupIds) {
-    if (groupId !== TAB_GROUP_ID_NONE) {
+    if (groupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
       await browser.tabGroups.move(groupId, { index: groupTargetIndex });
       groupTargetIndex += groupSizes.get(groupId) ?? 0;
     }
   }
 
-  for (let i = 0; i < ungroupedTabs.length; i += 1) {
-    const tabId = ungroupedTabs[i].id;
-    if (tabId !== undefined) {
-      await browser.tabs.move(tabId, { index: groupTargetIndex + i });
+  let targetIndex = groupTargetIndex;
+  for (const unit of sortUnits) {
+    for (const tab of unit.members) {
+      const tabId = tab.id;
+      if (tabId !== undefined) {
+        await browser.tabs.move(tabId, { index: targetIndex });
+        targetIndex += 1;
+      }
     }
   }
 }
