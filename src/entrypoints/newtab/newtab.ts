@@ -6,6 +6,7 @@ import {
   type Theme,
   type UserSettings,
 } from "../../utils/settings";
+import { sortTabsByMode } from "../../utils/sort";
 
 const STORAGE_KEY = "detailsState";
 const TAB_PREVIEWS_KEY = "tabPreviews";
@@ -446,10 +447,26 @@ async function loadTabs() {
       : `Window (${tabs.length} tabs)`;
 
     const summary = document.createElement("summary");
-    summary.textContent = windowLabel;
+    summary.classList.add("window-summary");
     if (windowRef.id === currentWindow.id) {
       summary.classList.add("current-window");
     }
+
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = windowLabel;
+    summary.appendChild(labelSpan);
+
+    const sortBtn = document.createElement("button");
+    sortBtn.className = "sort-btn";
+    sortBtn.title = `Sort tabs by ${currentSettings.defaultSortMode}`;
+    sortBtn.textContent = "⇅";
+    sortBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void sortTabsByMode(currentSettings.defaultSortMode, windowRef.id);
+    });
+    summary.appendChild(sortBtn);
+
     details.appendChild(summary);
 
     const ul = document.createElement("ul");

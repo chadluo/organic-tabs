@@ -54,29 +54,29 @@ export function getUrlSortKey(url: string): string {
   }
 }
 
-export async function sortTabsByMode(mode: SortMode) {
+export async function sortTabsByMode(mode: SortMode, windowId?: number) {
   if (mode === "title") {
-    await sortByTitle();
+    await sortByTitle(windowId);
     return;
   }
 
   if (mode === "lastAccessed") {
-    await sortByLastAccessed();
+    await sortByLastAccessed(windowId);
     return;
   }
 
-  await sortByWebsite();
+  await sortByWebsite(windowId);
 }
 
-export async function sortByTitle() {
-  await sortTabs((a, b) => naturalCompare(a.title ?? "", b.title ?? ""));
+export async function sortByTitle(windowId?: number) {
+  await sortTabs((a, b) => naturalCompare(a.title ?? "", b.title ?? ""), windowId);
 }
 
-export async function sortByLastAccessed() {
-  await sortTabs((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0));
+export async function sortByLastAccessed(windowId?: number) {
+  await sortTabs((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0), windowId);
 }
 
-export async function sortByWebsite() {
+export async function sortByWebsite(windowId?: number) {
   const sortKeyCache = new Map<string, string>();
 
   const getCachedSortKey = (url: string | undefined) => {
@@ -91,13 +91,16 @@ export async function sortByWebsite() {
     const keyA = getCachedSortKey(a.url);
     const keyB = getCachedSortKey(b.url);
     return naturalCompare(keyA, keyB);
-  });
+  }, windowId);
 }
 
 export async function sortTabs(
   compareFn: (a: SortableTab, b: SortableTab) => number,
+  windowId?: number,
 ) {
-  const tabs = await browser.tabs.query({ currentWindow: true });
+  const queryOptions =
+    windowId !== undefined ? { windowId } : { currentWindow: true as const };
+  const tabs = await browser.tabs.query(queryOptions);
   const pinnedTabs = tabs.filter((tab) => tab.pinned);
   const groupedTabs = tabs.filter(
     (tab) => !tab.pinned && tab.groupId !== TAB_GROUP_ID_NONE,
