@@ -1,96 +1,103 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Organic Tabs</title>
-    <meta name="manifest.type" content="browser_action" />
-    <link rel="stylesheet" href="./App.css" />
-  </head>
-  <body>
-    <div class="popup-root">
-      <h1>Organic Tabs</h1>
 
-      <section class="section">
-        <div class="section-header">
-          <h2>New Tab</h2>
-          <label class="toggle-label">
-            <input type="checkbox" id="newtab-enabled" />
-            Enabled
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organic Tabs</title>
+  <meta name="manifest.type" content="browser_action" />
+  <link rel="stylesheet" href="./popup.css" />
+</head>
+
+<body>
+  <div class="popup-root">
+    <h1>Organic Tabs</h1>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>New Tab Page</h2>
+        <label class="toggle-label">
+          <input type="checkbox" id="newtab-enabled" />
+          Enabled
+        </label>
+      </div>
+      <div class="sub-settings" id="newtab-sub">
+        <div class="setting-row">
+          <span class="setting-label">Theme</span>
+          <div class="radio-row radio-inline">
+            <label><input type="radio" name="theme" value="system" />System</label>
+            <label><input type="radio" name="theme" value="light" />Light</label>
+            <label><input type="radio" name="theme" value="dark" />Dark</label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label class="slider-row">
+            <span>Bookmark columns</span>
+            <input type="range" id="bookmark-columns" min="1" max="2" />
+            <span class="slider-value" id="bookmark-columns-value">1</span>
           </label>
         </div>
-        <div class="sub-settings" id="newtab-sub">
-          <div class="setting-row">
-            <span class="setting-label">Theme</span>
-            <div class="radio-row radio-inline">
-              <label><input type="radio" name="theme" value="system" /> System</label>
-              <label><input type="radio" name="theme" value="light" /> Light</label>
-              <label><input type="radio" name="theme" value="dark" /> Dark</label>
-            </div>
-          </div>
-          <div class="setting-row">
-            <label class="slider-row">
-              <span>Bookmark columns</span>
-              <input type="range" id="bookmark-columns" min="1" max="2" />
-              <span class="slider-value" id="bookmark-columns-value">1</span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <label class="slider-row">
-              <span>Tab columns</span>
-              <input type="range" id="tab-columns" min="1" max="4" />
-              <span class="slider-value" id="tab-columns-value">1</span>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-header">
-          <h2>Tab Sort</h2>
-          <label class="toggle-label">
-            <input type="checkbox" id="sort-enabled" />
-            Enabled
+        <div class="setting-row">
+          <label class="slider-row">
+            <span>Tab columns</span>
+            <input type="range" id="tab-columns" min="1" max="4" />
+            <span class="slider-value" id="tab-columns-value">1</span>
           </label>
         </div>
-        <div class="sub-settings" id="sort-sub">
-          <div class="setting-row">
-            <span class="setting-label">Default sort</span>
-            <div class="radio-row">
-              <label><input type="radio" name="default-sort" value="title" /> Title</label>
-              <label><input type="radio" name="default-sort" value="website" /> Website</label>
-              <label><input type="radio" name="default-sort" value="lastAccessed" /> Last Accessed</label>
-            </div>
-          </div>
-          <div class="button-grid">
-            <button type="button" id="sort-title">By Title</button>
-            <button type="button" id="sort-website">By Website</button>
-            <button type="button" id="sort-last-accessed">By Last Accessed</button>
-          </div>
-          <p id="sort-status" class="status" hidden></p>
-          <p class="shortcut" id="sort-shortcut">Alt+Shift+S: Sort using default order</p>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="section">
-        <div class="section-header">
-          <h2>Tab Shift</h2>
-          <label class="toggle-label">
-            <input type="checkbox" id="shift-enabled" />
-            Enabled
-          </label>
-        </div>
-        <div class="sub-settings" id="shift-sub">
-          <div class="button-grid direction-grid">
-            <button type="button" id="shift-up">Up</button>
-            <button type="button" id="shift-down">Down</button>
-            <button type="button" id="shift-left">Left</button>
-            <button type="button" id="shift-right">Right</button>
+    <hr />
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Tab Sort</h2>
+        <label class="toggle-label">
+          <input type="checkbox" id="sort-enabled" />
+          Enabled
+        </label>
+      </div>
+      <div class="sub-settings" id="sort-sub">
+        <div class="setting-row">
+          <span class="setting-label">Default sort</span>
+          <div class="radio-row radio-inline">
+            <label><input type="radio" name="default-sort" value="title" />Title</label>
+            <label><input type="radio" name="default-sort" value="website" />Website</label>
+            <label><input type="radio" name="default-sort" value="lastAccessed" />Last Accessed</label>
           </div>
-          <p id="shift-status" class="status" hidden></p>
         </div>
-      </section>
-    </div>
-    <script type="module" src="./main.ts"></script>
-  </body>
+        <div class="button-grid">
+          <button type="button" id="sort-title">Sort by Title</button>
+          <button type="button" id="sort-website">Sort by Website</button>
+          <button type="button" id="sort-last-accessed">Sort by Last Accessed</button>
+        </div>
+        <p id="sort-status" class="status" hidden></p>
+        <p class="shortcut" id="sort-shortcut">Alt+Shift+S: Sort using default order</p>
+      </div>
+    </section>
+
+    <hr />
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Tab Shift</h2>
+        <label class="toggle-label">
+          <input type="checkbox" id="shift-enabled" />
+          Enabled
+        </label>
+      </div>
+      <div class="sub-settings" id="shift-sub">
+        <div class="button-grid direction-grid">
+          <button type="button" id="shift-left"><span>Left</span><span class="btn-shortcut" id="shift-left-shortcut"></span></button>
+          <button type="button" id="shift-down"><span>Down</span><span class="btn-shortcut" id="shift-down-shortcut"></span></button>
+          <button type="button" id="shift-up"><span>Up</span><span class="btn-shortcut" id="shift-up-shortcut"></span></button>
+          <button type="button" id="shift-right"><span>Right</span><span class="btn-shortcut" id="shift-right-shortcut"></span></button>
+        </div>
+        <p id="shift-status" class="status" hidden></p>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+
 </html>

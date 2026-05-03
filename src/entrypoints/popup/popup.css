@@ -1,6 +1,8 @@
 body {
   margin: 0;
-  background: #ffffff;
+  color-scheme: light dark;
+  background: Canvas;
+  color: CanvasText;
 }
 
 [hidden] {
@@ -10,7 +12,6 @@ body {
 .popup-root {
   width: 360px;
   padding: 14px;
-  color: #1b1d21;
   font-family: "SF Pro Text", "Segoe UI", sans-serif;
 }
 
@@ -24,7 +25,6 @@ h2 {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #5c6573;
 }
 
 .section {
@@ -43,7 +43,6 @@ h2 {
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #5c6573;
   cursor: pointer;
 }
 
@@ -61,7 +60,6 @@ h2 {
 
 .setting-label {
   font-size: 12px;
-  color: #5c6573;
 }
 
 .slider-row {
@@ -69,6 +67,10 @@ h2 {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+}
+
+.slider-row>span:first-child {
+  flex-basis: 40%;
 }
 
 .slider-row input[type="range"] {
@@ -87,22 +89,14 @@ h2 {
 }
 
 .direction-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 button {
-  border: 1px solid #c9d0db;
-  background: #f7f9fc;
-  color: #1b1d21;
-  border-radius: 8px;
   padding: 9px 10px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-}
-
-button:hover {
-  background: #ebf2fb;
 }
 
 .radio-row {
@@ -130,18 +124,20 @@ button:hover {
   font-size: 12px;
 }
 
-.status-info {
-  background: #e9f2ff;
-  color: #0b4f98;
-}
-
-.status-error {
-  background: #fdebed;
-  color: #8e1e2c;
-}
-
 .shortcut {
   margin: 0;
   font-size: 11px;
-  color: #657084;
+  color: GrayText;
+}
+
+.direction-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.btn-shortcut {
+  font-size: 10px;
+  font-weight: 400;
 }

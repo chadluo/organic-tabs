@@ -79,6 +79,18 @@ async function init() {
     )!.textContent = `${sortCmd.shortcut}: Sort using default order`;
   }
 
+  for (const [name, id] of [
+    ["move-tab-up", "shift-up-shortcut"],
+    ["move-tab-down", "shift-down-shortcut"],
+    ["move-tab-left", "shift-left-shortcut"],
+    ["move-tab-right", "shift-right-shortcut"],
+  ] as const) {
+    const cmd = commands.find((c) => c.name === name);
+    if (cmd?.shortcut) {
+      document.getElementById(id)!.textContent = cmd.shortcut;
+    }
+  }
+
   document
     .getElementById("newtab-enabled")!
     .addEventListener("change", (e) => {
