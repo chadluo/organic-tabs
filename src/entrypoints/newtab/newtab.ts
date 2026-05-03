@@ -7,28 +7,16 @@ import {
 } from "../../utils/settings";
 import { sortTabsByMode } from "../../utils/sort";
 import { retrievePreview } from "../../utils/preview";
+import {
+  loadTabCatalog,
+  loadBookmarkCatalog,
+  type CatalogTab,
+  type BookmarkNode,
+} from "../../utils/catalog";
 
 const STORAGE_KEY = "detailsState";
 
 type DetailsState = Record<string, boolean>;
-
-interface BookmarkNode {
-  id: string;
-  title: string;
-  url?: string;
-  children?: BookmarkNode[];
-}
-
-interface BrowserTab {
-  id?: number;
-  windowId?: number;
-  title?: string;
-  url?: string;
-  favIconUrl?: string;
-  active?: boolean;
-  groupId?: number;
-  lastAccessed?: number;
-}
 
 let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
@@ -343,21 +331,10 @@ function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
 }
 
 async function loadBookmarks() {
-  const tree = await browser.bookmarks.getTree();
+  const topFolders = await loadBookmarkCatalog();
   const section = document.getElementById("bookmarks-section") as HTMLElement;
   const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
-
-  const topFolders: BookmarkNode[] = [];
-  for (const root of tree) {
-    if (!root.children) {
-      continue;
-    }
-
-    for (const child of root.children) {
-      topFolders.push(child);
-    }
-  }
 
   for (const folder of topFolders) {
     const rendered = renderBookmarkNode(folder);
@@ -367,7 +344,7 @@ async function loadBookmarks() {
   }
 }
 
-function createTabLi(tab: BrowserTab): HTMLLIElement {
+function createTabLi(tab: CatalogTab): HTMLLIElement {
   const li = document.createElement("li");
   li.draggable = true;
   li.addEventListener("dragstart", (e) => {
@@ -407,43 +384,25 @@ function createTabLi(tab: BrowserTab): HTMLLIElement {
 }
 
 async function loadTabs() {
-  const windows = await browser.windows.getAll({ populate: true });
-  const currentWindow = await browser.windows.getCurrent();
-  const groups = await browser.tabGroups.query({});
-  const groupMap = new Map(groups.map((group) => [group.id, group]));
+  const { windows, groups: groupMap } = await loadTabCatalog();
 
   const section = document.getElementById("tabs-section") as HTMLElement;
   const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
 
-  windows.sort((a, b) => {
-    const lastA = Math.max(
-      ...(a.tabs ?? []).map((tab) => tab.lastAccessed ?? 0),
-    );
-    const lastB = Math.max(
-      ...(b.tabs ?? []).map((tab) => tab.lastAccessed ?? 0),
-    );
-    return lastB - lastA;
-  });
-
   for (const windowRef of windows) {
-    const tabs = windowRef.tabs;
-    if (!tabs || !windowRef.id) {
-      continue;
-    }
-
     const details = document.createElement("details");
     trackDetails(details, `window:${windowRef.id}`, true);
     setupDropTarget(details, windowRef.id);
 
-    const activeTab = tabs.find((tab) => tab.active);
+    const activeTab = windowRef.tabs.find((tab) => tab.active);
     const windowLabel = activeTab
-      ? `${activeTab.title} (${tabs.length} tabs)`
-      : `Window (${tabs.length} tabs)`;
+      ? `${activeTab.title} (${windowRef.tabs.length} tabs)`
+      : `Window (${windowRef.tabs.length} tabs)`;
 
     const summary = document.createElement("summary");
     summary.classList.add("window-summary");
-    if (windowRef.id === currentWindow.id) {
+    if (windowRef.isCurrent) {
       summary.classList.add("current-window");
     }
 
@@ -469,15 +428,14 @@ async function loadTabs() {
     let currentGroupId: number = browser.tabGroups.TAB_GROUP_ID_NONE;
     let groupUl: HTMLUListElement | null = null;
 
-    for (const tab of tabs) {
-      if (tab.groupId !== browser.tabGroups.TAB_GROUP_ID_NONE && tab.groupId !== currentGroupId) {
-        const group = groupMap.get(tab.groupId);
+    for (const tab of windowRef.tabs) {
+      const tabGroupId = tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE;
+      if (tabGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE && tabGroupId !== currentGroupId) {
+        const group = groupMap.get(tabGroupId);
         const groupDetails = document.createElement("details");
         const collapsed = group?.collapsed ?? false;
-        trackDetails(groupDetails, `tabgroup:${tab.groupId}`, !collapsed);
-        if (tab.groupId !== undefined && windowRef.id !== undefined) {
-          setupDropTarget(groupDetails, windowRef.id, tab.groupId);
-        }
+        trackDetails(groupDetails, `tabgroup:${tabGroupId}`, !collapsed);
+        setupDropTarget(groupDetails, windowRef.id, tabGroupId);
 
         const groupSummary = document.createElement("summary");
         groupSummary.textContent = group?.title || "Unnamed Group";
@@ -494,8 +452,8 @@ async function loadTabs() {
         ul.appendChild(li);
       }
 
-      if (tab.groupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
-        currentGroupId = tab.groupId;
+      if (tabGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
+        currentGroupId = tabGroupId;
         groupUl?.appendChild(createTabLi(tab));
       } else {
         currentGroupId = browser.tabGroups.TAB_GROUP_ID_NONE;
