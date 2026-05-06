@@ -18,6 +18,26 @@ const STORAGE_KEY = "detailsState";
 
 type DetailsState = Record<string, boolean>;
 
+interface ReadingListEntry {
+  url: string;
+  title: string;
+  hasBeenRead: boolean;
+  creationTime: number;
+}
+
+interface ReadingListApi {
+  query(filter: object): Promise<ReadingListEntry[]>;
+  updateEntry(details: { url: string; hasBeenRead: boolean }): Promise<void>;
+  onEntryAdded: { addListener(cb: () => void): void };
+  onEntryRemoved: { addListener(cb: () => void): void };
+  onEntryUpdated: { addListener(cb: () => void): void };
+}
+
+function getReadingListApi(): ReadingListApi | null {
+  const g = globalThis as unknown as { chrome?: { readingList?: ReadingListApi } };
+  return g.chrome?.readingList ?? null;
+}
+
 let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
 let mediaQuery: MediaQueryList | null = null;
@@ -69,11 +89,16 @@ function applyLayout(settings: UserSettings) {
   const bookmarksSection = document.getElementById(
     "bookmarks-section",
   ) as HTMLElement;
+  const readingListSection = document.getElementById(
+    "reading-list-section",
+  ) as HTMLElement;
   const tabsSection = document.getElementById("tabs-section") as HTMLElement;
 
   bookmarksSection.style.flex = String(settings.bookmarkColumns);
-  tabsSection.style.flex = String(settings.tabColumns);
   bookmarksSection.style.columns = String(settings.bookmarkColumns);
+  readingListSection.style.flex = String(settings.readingListColumns);
+  readingListSection.style.columns = String(settings.readingListColumns);
+  tabsSection.style.flex = String(settings.tabColumns);
   tabsSection.style.columns = String(settings.tabColumns);
 }
 
@@ -290,12 +315,33 @@ class TabLink extends HTMLElement {
   }
 }
 
+class ReadingListLink extends HTMLElement {
+  connectedCallback() {
+    const template = document.getElementById(
+      "reading-list-link-template",
+    ) as HTMLTemplateElement;
+    const content = template.content.cloneNode(true) as DocumentFragment;
+    const url = this.getAttribute("url") ?? "";
+    const title = this.getAttribute("title") || url;
+    const anchor = content.querySelector(".link") as HTMLAnchorElement;
+
+    anchor.href = url;
+    setSoftWrappingTitle(anchor, title);
+    populateLink(content, url);
+    this.appendChild(content);
+  }
+}
+
 if (!customElements.get("bookmark-link")) {
   customElements.define("bookmark-link", BookmarkLink);
 }
 
 if (!customElements.get("tab-link")) {
   customElements.define("tab-link", TabLink);
+}
+
+if (!customElements.get("reading-list-link")) {
+  customElements.define("reading-list-link", ReadingListLink);
 }
 
 function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
@@ -467,6 +513,112 @@ async function loadTabs() {
   }
 }
 
+function setupReadingListDropTarget(
+  details: HTMLDetailsElement,
+  targetHasBeenRead: boolean,
+) {
+  details.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (activeDragTarget !== details) {
+      activeDragTarget?.classList.remove("drag-over");
+      activeDragTarget = details;
+      details.classList.add("drag-over");
+    }
+  });
+
+  details.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  details.addEventListener("dragleave", (e) => {
+    e.stopPropagation();
+    if (!details.contains(e.relatedTarget as Node)) {
+      details.classList.remove("drag-over");
+      if (activeDragTarget === details) activeDragTarget = null;
+    }
+  });
+
+  details.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    details.classList.remove("drag-over");
+    if (activeDragTarget === details) activeDragTarget = null;
+    const raw = e.dataTransfer?.getData("application/x-reading-list");
+    if (!raw) return;
+    const { url, hasBeenRead: sourceHasBeenRead } = JSON.parse(raw) as {
+      url: string;
+      hasBeenRead: boolean;
+    };
+    if (sourceHasBeenRead === targetHasBeenRead) return;
+    void getReadingListApi()?.updateEntry({ url, hasBeenRead: targetHasBeenRead });
+  });
+}
+
+function createReadingListLi(entry: ReadingListEntry): HTMLLIElement {
+  const li = document.createElement("li");
+  li.draggable = true;
+  li.addEventListener("dragstart", (e) => {
+    e.dataTransfer?.setData(
+      "application/x-reading-list",
+      JSON.stringify({ url: entry.url, hasBeenRead: entry.hasBeenRead }),
+    );
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  });
+  li.addEventListener("dragend", () => {
+    document
+      .querySelectorAll<HTMLElement>(".drag-over")
+      .forEach((el) => el.classList.remove("drag-over"));
+    activeDragTarget = null;
+  });
+
+  const link = document.createElement("reading-list-link");
+  link.setAttribute("url", entry.url);
+  link.setAttribute("title", entry.title || entry.url);
+  li.appendChild(link);
+  return li;
+}
+
+async function loadReadingList() {
+  const section = document.getElementById("reading-list-section") as HTMLElement;
+  const api = getReadingListApi();
+
+  if (!api) {
+    section.hidden = true;
+    return;
+  }
+
+  const heading = section.querySelector("h2") as HTMLHeadingElement;
+  section.replaceChildren(heading);
+
+  const entries = await api.query({});
+  const unread = entries.filter((e) => !e.hasBeenRead);
+  const read = entries.filter((e) => e.hasBeenRead);
+
+  const unreadDetails = document.createElement("details");
+  trackDetails(unreadDetails, "readingList:unread", true);
+  setupReadingListDropTarget(unreadDetails, false);
+  const unreadSummary = document.createElement("summary");
+  unreadSummary.textContent = "Unread";
+  unreadDetails.appendChild(unreadSummary);
+  const unreadUl = document.createElement("ul");
+  for (const entry of unread) unreadUl.appendChild(createReadingListLi(entry));
+  unreadDetails.appendChild(unreadUl);
+  section.appendChild(unreadDetails);
+
+  const readDetails = document.createElement("details");
+  trackDetails(readDetails, "readingList:read", false);
+  setupReadingListDropTarget(readDetails, true);
+  const readSummary = document.createElement("summary");
+  readSummary.textContent = "Read";
+  readDetails.appendChild(readSummary);
+  const readUl = document.createElement("ul");
+  for (const entry of read) readUl.appendChild(createReadingListLi(entry));
+  readDetails.appendChild(readUl);
+  section.appendChild(readDetails);
+}
+
 function onSettingsChanged(newSettings: UserSettings) {
   applyTheme(newSettings.theme);
   applyLayout(newSettings);
@@ -511,6 +663,13 @@ browser.bookmarks.onMoved.addListener(() => {
   void loadBookmarks();
 });
 
+const readingListApi = getReadingListApi();
+if (readingListApi) {
+  readingListApi.onEntryAdded.addListener(() => void loadReadingList());
+  readingListApi.onEntryRemoved.addListener(() => void loadReadingList());
+  readingListApi.onEntryUpdated.addListener(() => void loadReadingList());
+}
+
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes[SETTINGS_KEY]) {
     return;
@@ -536,6 +695,7 @@ async function init() {
 
   detailsState = await loadState();
   await loadBookmarks();
+  await loadReadingList();
   await loadTabs();
 }
 

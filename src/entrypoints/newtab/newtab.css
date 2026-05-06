@@ -52,6 +52,7 @@ body {
 }
 
 #bookmarks-section,
+#reading-list-section,
 #tabs-section {
   min-width: 0;
   flex: 1;
@@ -59,6 +60,7 @@ body {
 }
 
 #bookmarks-section > h2,
+#reading-list-section > h2,
 #tabs-section > h2 {
   margin: 0 0 0.8rem;
   column-span: all;
@@ -127,6 +129,7 @@ li {
 }
 
 bookmark-link,
+reading-list-link,
 tab-link {
   display: flex;
   gap: 0.45rem;
@@ -227,6 +230,7 @@ tab-link.duplicate-highlight {
   }
 
   #bookmarks-section,
+  #reading-list-section,
   #tabs-section {
     width: 100%;
     columns: 1 !important;

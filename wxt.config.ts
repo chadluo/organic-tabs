@@ -9,6 +9,7 @@ export default defineConfig({
     permissions: [
       "bookmarks",
       "favicon",
+      "readingList",
       "storage",
       "tabGroups",
       "tabs",

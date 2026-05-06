@@ -1,36 +1,42 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Organic Tabs</title>
-    <link rel="stylesheet" href="./newtab.css" />
-  </head>
-  <body>
-    <template id="bookmark-link-template">
-      <img class="favicon" alt="" />
-      <span class="text-wrap"
-        ><a class="link"></a> <span class="hostname"></span
-      ></span>
-    </template>
 
-    <template id="tab-link-template">
-      <img class="favicon" alt="" />
-      <span class="text-wrap"
-        ><a class="link" href="#"></a> <span class="hostname"></span
-      ></span>
-    </template>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organic Tabs</title>
+  <link rel="stylesheet" href="./newtab.css" />
+</head>
 
-    <main id="layout">
-      <section id="bookmarks-section">
-        <h2>Bookmarks</h2>
-      </section>
-      <section id="tabs-section">
-        <h2>Open Tabs</h2>
-      </section>
-    </main>
+<body>
+  <template id="bookmark-link-template">
+    <img class="favicon" alt="" />
+    <span class="text-wrap"><a class="link"></a> <span class="hostname"></span></span>
+  </template>
 
+  <template id="tab-link-template">
+    <img class="favicon" alt="" />
+    <span class="text-wrap"><a class="link" href="#"></a> <span class="hostname"></span></span>
+  </template>
 
-<script type="module" src="./newtab.ts"></script>
-  </body>
+  <template id="reading-list-link-template">
+    <img class="favicon" alt="" />
+    <span class="text-wrap"><a class="link"></a> <span class="hostname"></span></span>
+  </template>
+
+  <main id="layout">
+    <section id="bookmarks-section">
+      <h2>Bookmarks</h2>
+    </section>
+    <section id="reading-list-section">
+      <h2>Reading List</h2>
+    </section>
+    <section id="tabs-section">
+      <h2>Open Tabs</h2>
+    </section>
+  </main>
+
+  <script type="module" src="./newtab.ts"></script>
+</body>
+
 </html>

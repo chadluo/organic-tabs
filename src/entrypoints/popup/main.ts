@@ -44,6 +44,14 @@ function applySettings(s: UserSettings) {
     s.bookmarkColumns
   );
 
+  const readingListCols = document.getElementById(
+    "reading-list-columns"
+  ) as HTMLInputElement;
+  readingListCols.value = String(s.readingListColumns);
+  document.getElementById("reading-list-columns-value")!.textContent = String(
+    s.readingListColumns
+  );
+
   const tabCols = document.getElementById("tab-columns") as HTMLInputElement;
   tabCols.value = String(s.tabColumns);
   document.getElementById("tab-columns-value")!.textContent = String(
@@ -114,6 +122,15 @@ async function init() {
     document.getElementById("bookmark-columns-value")!.textContent =
       bookmarkCols.value;
     void updateSettings({ bookmarkColumns: Number(bookmarkCols.value) });
+  });
+
+  const readingListCols = document.getElementById(
+    "reading-list-columns"
+  ) as HTMLInputElement;
+  readingListCols.addEventListener("input", () => {
+    document.getElementById("reading-list-columns-value")!.textContent =
+      readingListCols.value;
+    void updateSettings({ readingListColumns: Number(readingListCols.value) });
   });
 
   const tabCols = document.getElementById("tab-columns") as HTMLInputElement;

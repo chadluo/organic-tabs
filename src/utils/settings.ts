@@ -5,6 +5,7 @@ export type Direction = "up" | "down" | "left" | "right";
 export interface UserSettings {
   theme: Theme;
   bookmarkColumns: number;
+  readingListColumns: number;
   tabColumns: number;
   defaultSortMode: SortMode;
   newTabEnabled: boolean;
@@ -17,6 +18,7 @@ export const SETTINGS_KEY = "userSettings";
 export const defaultSettings: UserSettings = {
   theme: "system",
   bookmarkColumns: 1,
+  readingListColumns: 1,
   tabColumns: 1,
   defaultSortMode: "website",
   newTabEnabled: true,
