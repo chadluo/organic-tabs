@@ -13,35 +13,24 @@ import {
   type CatalogTab,
   type BookmarkNode,
 } from "../../utils/catalog";
+import {
+  initDrag,
+  setupDropTarget,
+  makeTabDraggable,
+  makeReadingListDraggable,
+  makeBookmarkDraggable,
+  getReadingListApi,
+  type ReadingListEntry,
+  type TabDragData,
+} from "./drag";
 
 const STORAGE_KEY = "detailsState";
 
 type DetailsState = Record<string, boolean>;
 
-interface ReadingListEntry {
-  url: string;
-  title: string;
-  hasBeenRead: boolean;
-  creationTime: number;
-}
-
-interface ReadingListApi {
-  query(filter: object): Promise<ReadingListEntry[]>;
-  updateEntry(details: { url: string; hasBeenRead: boolean }): Promise<void>;
-  onEntryAdded: { addListener(cb: () => void): void };
-  onEntryRemoved: { addListener(cb: () => void): void };
-  onEntryUpdated: { addListener(cb: () => void): void };
-}
-
-function getReadingListApi(): ReadingListApi | null {
-  const g = globalThis as unknown as { chrome?: { readingList?: ReadingListApi } };
-  return g.chrome?.readingList ?? null;
-}
-
 let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
 let mediaQuery: MediaQueryList | null = null;
-let activeDragTarget: HTMLDetailsElement | null = null;
 
 function loadState(): Promise<DetailsState> {
   return browser.storage.local
@@ -114,72 +103,6 @@ function trackDetails(
   });
 }
 
-function setupDropTarget(
-  details: HTMLDetailsElement,
-  windowId: number,
-  groupId?: number,
-) {
-  details.addEventListener("dragenter", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (activeDragTarget !== details) {
-      activeDragTarget?.classList.remove("drag-over");
-      activeDragTarget = details;
-      details.classList.add("drag-over");
-    }
-  });
-
-  details.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-
-  details.addEventListener("dragleave", (e) => {
-    e.stopPropagation();
-    if (!details.contains(e.relatedTarget as Node)) {
-      details.classList.remove("drag-over");
-      if (activeDragTarget === details) activeDragTarget = null;
-    }
-  });
-
-  details.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    details.classList.remove("drag-over");
-    if (activeDragTarget === details) activeDragTarget = null;
-    const raw = e.dataTransfer?.getData("application/x-tab");
-    if (!raw) return;
-    const { tabId, sourceWindowId, sourceGroupId } = JSON.parse(raw) as {
-      tabId: number;
-      sourceWindowId: number;
-      sourceGroupId: number;
-    };
-    void applyTabDrop(tabId, sourceWindowId, sourceGroupId, windowId, groupId);
-  });
-}
-
-async function applyTabDrop(
-  tabId: number,
-  sourceWindowId: number,
-  sourceGroupId: number,
-  targetWindowId: number,
-  targetGroupId?: number,
-) {
-  const crossWindow = sourceWindowId !== targetWindowId;
-  const targetGroup = targetGroupId ?? browser.tabGroups.TAB_GROUP_ID_NONE;
-  if (!crossWindow && sourceGroupId === targetGroup) return;
-
-  if (crossWindow) {
-    await browser.tabs.move(tabId, { windowId: targetWindowId, index: -1 });
-  }
-
-  if (targetGroup !== browser.tabGroups.TAB_GROUP_ID_NONE) {
-    await browser.tabs.group({ tabIds: [tabId], groupId: targetGroup });
-  } else if (!crossWindow && sourceGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
-    await browser.tabs.ungroup([tabId]);
-  }
-  void loadTabs();
-}
 
 function faviconUrl(pageUrl: string): string {
   if (!pageUrl) {
@@ -351,6 +274,7 @@ function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
     link.setAttribute("url", node.url);
     link.setAttribute("title", node.title || node.url);
     li.appendChild(link);
+    makeBookmarkDraggable(li, { id: node.id, url: node.url, title: node.title || node.url });
     return li;
   }
 
@@ -360,6 +284,7 @@ function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
     summary.textContent = node.title || "Bookmarks";
     details.appendChild(summary);
     trackDetails(details, `bookmark:${node.id}`, false);
+    setupDropTarget(details, { type: "bookmark-folder", folderId: node.id });
 
     const ul = document.createElement("ul");
     for (const child of node.children) {
@@ -392,24 +317,14 @@ async function loadBookmarks() {
 
 function createTabLi(tab: CatalogTab): HTMLLIElement {
   const li = document.createElement("li");
-  li.draggable = true;
-  li.addEventListener("dragstart", (e) => {
-    e.dataTransfer?.setData(
-      "application/x-tab",
-      JSON.stringify({
-        tabId: tab.id,
-        sourceWindowId: tab.windowId,
-        sourceGroupId: tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE,
-      }),
-    );
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-  });
-  li.addEventListener("dragend", () => {
-    document
-      .querySelectorAll<HTMLElement>(".drag-over")
-      .forEach((el) => el.classList.remove("drag-over"));
-    activeDragTarget = null;
-  });
+  const tabData: TabDragData = {
+    tabId: tab.id ?? 0,
+    sourceWindowId: tab.windowId ?? 0,
+    sourceGroupId: tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE,
+    url: tab.url ?? "",
+    title: tab.title ?? "",
+  };
+  makeTabDraggable(li, tabData);
   const link = document.createElement("tab-link");
 
   if (tab.id !== undefined) {
@@ -439,7 +354,7 @@ async function loadTabs() {
   for (const windowRef of windows) {
     const details = document.createElement("details");
     trackDetails(details, `window:${windowRef.id}`, true);
-    setupDropTarget(details, windowRef.id);
+    setupDropTarget(details, { type: "tab-window", windowId: windowRef.id });
 
     const activeTab = windowRef.tabs.find((tab) => tab.active);
     const windowLabel = activeTab
@@ -481,7 +396,7 @@ async function loadTabs() {
         const groupDetails = document.createElement("details");
         const collapsed = group?.collapsed ?? false;
         trackDetails(groupDetails, `tabgroup:${tabGroupId}`, !collapsed);
-        setupDropTarget(groupDetails, windowRef.id, tabGroupId);
+        setupDropTarget(groupDetails, { type: "tab-group", windowId: windowRef.id, groupId: tabGroupId });
 
         const groupSummary = document.createElement("summary");
         groupSummary.textContent = group?.title || "Unnamed Group";
@@ -513,65 +428,9 @@ async function loadTabs() {
   }
 }
 
-function setupReadingListDropTarget(
-  details: HTMLDetailsElement,
-  targetHasBeenRead: boolean,
-) {
-  details.addEventListener("dragenter", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (activeDragTarget !== details) {
-      activeDragTarget?.classList.remove("drag-over");
-      activeDragTarget = details;
-      details.classList.add("drag-over");
-    }
-  });
-
-  details.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-
-  details.addEventListener("dragleave", (e) => {
-    e.stopPropagation();
-    if (!details.contains(e.relatedTarget as Node)) {
-      details.classList.remove("drag-over");
-      if (activeDragTarget === details) activeDragTarget = null;
-    }
-  });
-
-  details.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    details.classList.remove("drag-over");
-    if (activeDragTarget === details) activeDragTarget = null;
-    const raw = e.dataTransfer?.getData("application/x-reading-list");
-    if (!raw) return;
-    const { url, hasBeenRead: sourceHasBeenRead } = JSON.parse(raw) as {
-      url: string;
-      hasBeenRead: boolean;
-    };
-    if (sourceHasBeenRead === targetHasBeenRead) return;
-    void getReadingListApi()?.updateEntry({ url, hasBeenRead: targetHasBeenRead });
-  });
-}
-
 function createReadingListLi(entry: ReadingListEntry): HTMLLIElement {
   const li = document.createElement("li");
-  li.draggable = true;
-  li.addEventListener("dragstart", (e) => {
-    e.dataTransfer?.setData(
-      "application/x-reading-list",
-      JSON.stringify({ url: entry.url, hasBeenRead: entry.hasBeenRead }),
-    );
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-  });
-  li.addEventListener("dragend", () => {
-    document
-      .querySelectorAll<HTMLElement>(".drag-over")
-      .forEach((el) => el.classList.remove("drag-over"));
-    activeDragTarget = null;
-  });
+  makeReadingListDraggable(li, { url: entry.url, title: entry.title, hasBeenRead: entry.hasBeenRead });
 
   const link = document.createElement("reading-list-link");
   link.setAttribute("url", entry.url);
@@ -598,7 +457,7 @@ async function loadReadingList() {
 
   const unreadDetails = document.createElement("details");
   trackDetails(unreadDetails, "readingList:unread", true);
-  setupReadingListDropTarget(unreadDetails, false);
+  setupDropTarget(unreadDetails, { type: "reading-list-group", hasBeenRead: false });
   const unreadSummary = document.createElement("summary");
   unreadSummary.textContent = "Unread";
   unreadDetails.appendChild(unreadSummary);
@@ -609,7 +468,7 @@ async function loadReadingList() {
 
   const readDetails = document.createElement("details");
   trackDetails(readDetails, "readingList:read", false);
-  setupReadingListDropTarget(readDetails, true);
+  setupDropTarget(readDetails, { type: "reading-list-group", hasBeenRead: true });
   const readSummary = document.createElement("summary");
   readSummary.textContent = "Read";
   readDetails.appendChild(readSummary);
@@ -693,6 +552,7 @@ async function init() {
   applyTheme(settings.theme);
   applyLayout(settings);
 
+  initDrag(() => void loadTabs());
   detailsState = await loadState();
   await loadBookmarks();
   await loadReadingList();
