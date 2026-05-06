@@ -19,6 +19,11 @@ interface EdgeMidpoints {
   candidate: Point;
 }
 
+/**
+ * Cyclic fallback used when the current window is maximized or fullscreen,
+ * where geometric screen positions are unreliable. Steps through windows sorted
+ * by ID to give a stable, repeatable cycle order.
+ */
 export function findCyclicTarget(
   windows: ShiftWindow[],
   currentId: number,
@@ -68,6 +73,11 @@ function getEdgeMidpoints(w: ShiftWindow, direction: Direction): EdgeMidpoints {
   }
 }
 
+/**
+ * Finds the nearest window in `direction` by comparing the relevant-axis
+ * distance between edge midpoints (horizontal for left/right, vertical for
+ * up/down), so a window directly above ranks ahead of a diagonal one.
+ */
 export function findGeometricTarget(
   windows: ShiftWindow[],
   currentWindow: ShiftWindow,

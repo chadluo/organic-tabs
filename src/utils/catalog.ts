@@ -32,11 +32,16 @@ export interface CatalogWindow {
   lastAccessed: number;
 }
 
+/**
+ * Flat snapshot of all open windows and their tab groups.
+ * Windows are pre-sorted by lastAccessed descending (most recent first).
+ */
 export interface TabCatalog {
   windows: CatalogWindow[];
   groups: Map<number, CatalogGroup>;
 }
 
+/** Fetches all windows, the active window, and tab groups in parallel. */
 export async function loadTabCatalog(): Promise<TabCatalog> {
   const [allWindows, currentWindow, groups] = await Promise.all([
     browser.windows.getAll({ populate: true }),
@@ -64,6 +69,10 @@ export async function loadTabCatalog(): Promise<TabCatalog> {
   return { windows, groups: groupMap };
 }
 
+/**
+ * Returns the browser's top-level bookmark folders (Bookmarks Bar, Other Bookmarks, etc.)
+ * by stripping one level of synthetic roots from `bookmarks.getTree`.
+ */
 export async function loadBookmarkCatalog(): Promise<BookmarkNode[]> {
   const tree = await browser.bookmarks.getTree();
   const topFolders: BookmarkNode[] = [];

@@ -11,6 +11,11 @@ export interface SortableTab {
   splitViewId?: number;
 }
 
+/**
+ * Three-pass move plan produced by `computeSortMoves` and consumed by `sortTabs`.
+ * Passes are applied in order (pinned → groups → ungrouped) to avoid index
+ * conflicts as tabs shift positions.
+ */
 export interface SortPlan {
   pinnedMoves: { tabId: number; index: number }[];
   groupMoves: { groupId: number; index: number }[];
@@ -40,6 +45,11 @@ export function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
+/**
+ * Produces a path-like sort key that groups tabs by domain. Handles
+ * country-code second-level domains (e.g. co.uk, com.au) as a single unit
+ * so "bbc.co.uk" sorts alongside other BBC pages rather than generic ".uk" sites.
+ */
 export function getUrlSortKey(url: string): string {
   try {
     const urlObj = new URL(url);
@@ -60,6 +70,11 @@ export function getUrlSortKey(url: string): string {
   }
 }
 
+/**
+ * Computes target indices for all tabs without moving anything.
+ * Groups are sorted as units (by their first tab's sort key); pinned tabs
+ * and split-view clusters preserve internal order and are not broken apart.
+ */
 export function computeSortMoves(
   tabs: SortableTab[],
   compareFn: (a: SortableTab, b: SortableTab) => number,

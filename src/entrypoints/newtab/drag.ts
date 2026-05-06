@@ -5,6 +5,10 @@ export interface ReadingListEntry {
   creationTime: number;
 }
 
+/**
+ * `chrome.readingList` is absent from WXT/browser-types, so we access it
+ * via a manual cast and return null when the API is unavailable.
+ */
 interface ReadingListApi {
   query(filter: object): Promise<ReadingListEntry[]>;
   addEntry(details: { url: string; title: string; hasBeenRead: boolean }): Promise<void>;
@@ -43,6 +47,10 @@ const TAB_MIME = "application/x-tab";
 const RL_MIME = "application/x-reading-list";
 const BM_MIME = "application/x-bookmark";
 
+/**
+ * Discriminated union that drives both the copy/move drop effect and the
+ * Chrome API calls executed on drop inside `setupDropTarget`.
+ */
 export type DropTargetConfig =
   | { type: "tab-window"; windowId: number }
   | { type: "tab-group"; windowId: number; groupId: number }
@@ -55,6 +63,7 @@ let activeDragTarget: HTMLDetailsElement | null = null;
 let activeDragType: DragType | null = null;
 let _reloadTabs: (() => void) | null = null;
 
+/** Must be called once at page load; provides the reload callback invoked after a tab move or group change. */
 export function initDrag(reloadTabs: () => void): void {
   _reloadTabs = reloadTabs;
 }
@@ -72,6 +81,10 @@ function getDragType(types: readonly string[]): DragType | null {
   return null;
 }
 
+/**
+ * Same-section drops (bookmark→folder, reading-list→reading-list group) use move
+ * semantics; all cross-section drops copy (open new tab, create bookmark, etc.).
+ */
 function isMoveSemantics(config: DropTargetConfig, dragType: DragType): boolean {
   if (config.type === "bookmark-folder" && dragType === "bookmark") return true;
   if (config.type === "reading-list-group" && dragType === "reading-list") return true;
@@ -162,6 +175,11 @@ export function makeBookmarkDraggable(
   makeDraggable(li, BM_MIME, data);
 }
 
+/**
+ * Attaches dragenter/dragover/dragleave/drop handlers to a `<details>` element.
+ * Only one target is "active" at a time via module-level state to prevent
+ * spurious dragleave events from nested child elements triggering a false leave.
+ */
 export function setupDropTarget(
   details: HTMLDetailsElement,
   config: DropTargetConfig,

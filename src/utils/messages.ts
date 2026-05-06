@@ -10,6 +10,7 @@ export type BackgroundResponse =
   | { success: true }
   | { success: false; error: string };
 
+/** Sends a typed message to the background script. Throws if the response carries an error. */
 export async function sendToBackground(
   message: BackgroundMessage,
 ): Promise<void> {

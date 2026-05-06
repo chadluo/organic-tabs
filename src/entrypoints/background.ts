@@ -9,6 +9,7 @@ import { findCyclicTarget, findGeometricTarget } from "../utils/shift";
 import type { BackgroundMessage, BackgroundResponse } from "../utils/messages";
 import { storePreview, evictPreview } from "../utils/preview";
 
+/** Per-window debounce: capture fires 3 s after the last activation to skip rapid tab switching. */
 const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 export default defineBackground(() => {
@@ -128,6 +129,11 @@ async function captureActiveTabPreview(windowId: number, tabId: number) {
   }
 }
 
+/**
+ * Uses geometric targeting (nearest window in direction) for windowed state
+ * and cyclic targeting (stable ID-order cycle) for maximized/fullscreen,
+ * where screen positions are unreliable.
+ */
 async function moveActiveTabToDirection(direction: Direction) {
   const currentWindow = await browser.windows.getCurrent({ populate: false });
   if (!currentWindow.id) {
