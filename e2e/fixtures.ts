@@ -33,7 +33,16 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       let [background] = browserCtx.serviceWorkers();
       if (!background)
         background = await browserCtx.waitForEvent("serviceworker");
-      await use(background.url().split("/")[2]);
+      const extensionId = background.url().split("/")[2];
+
+      // Chrome installs the extension asynchronously after launch. Navigate to
+      // the NTP once so the service worker fully activates before tests run.
+      const warmup = await browserCtx.newPage();
+      await warmup.goto(`chrome-extension://${extensionId}/newtab.html`);
+      await warmup.waitForLoadState("domcontentloaded");
+      await warmup.close();
+
+      await use(extensionId);
     },
     { scope: "worker" },
   ],
