@@ -36,21 +36,12 @@ function applySettings(s: UserSettings) {
     .querySelectorAll<HTMLInputElement>('input[name="theme"]')
     .forEach((r) => (r.checked = r.value === s.theme));
 
-  const bookmarkCols = document.getElementById(
-    "bookmark-columns"
+  const bookmarksAndListsCols = document.getElementById(
+    "bookmarks-and-lists-columns"
   ) as HTMLInputElement;
-  bookmarkCols.value = String(s.bookmarkColumns);
-  document.getElementById("bookmark-columns-value")!.textContent = String(
-    s.bookmarkColumns
-  );
-
-  const readingListCols = document.getElementById(
-    "reading-list-columns"
-  ) as HTMLInputElement;
-  readingListCols.value = String(s.readingListColumns);
-  document.getElementById("reading-list-columns-value")!.textContent = String(
-    s.readingListColumns
-  );
+  bookmarksAndListsCols.value = String(s.bookmarksAndListsColumns);
+  document.getElementById("bookmarks-and-lists-columns-value")!.textContent =
+    String(s.bookmarksAndListsColumns);
 
   const tabCols = document.getElementById("tab-columns") as HTMLInputElement;
   tabCols.value = String(s.tabColumns);
@@ -115,22 +106,13 @@ async function init() {
       );
     });
 
-  const bookmarkCols = document.getElementById(
-    "bookmark-columns"
+  const bookmarksAndListsCols = document.getElementById(
+    "bookmarks-and-lists-columns"
   ) as HTMLInputElement;
-  bookmarkCols.addEventListener("input", () => {
-    document.getElementById("bookmark-columns-value")!.textContent =
-      bookmarkCols.value;
-    void updateSettings({ bookmarkColumns: Number(bookmarkCols.value) });
-  });
-
-  const readingListCols = document.getElementById(
-    "reading-list-columns"
-  ) as HTMLInputElement;
-  readingListCols.addEventListener("input", () => {
-    document.getElementById("reading-list-columns-value")!.textContent =
-      readingListCols.value;
-    void updateSettings({ readingListColumns: Number(readingListCols.value) });
+  bookmarksAndListsCols.addEventListener("input", () => {
+    document.getElementById("bookmarks-and-lists-columns-value")!.textContent =
+      bookmarksAndListsCols.value;
+    void updateSettings({ bookmarksAndListsColumns: Number(bookmarksAndListsCols.value) });
   });
 
   const tabCols = document.getElementById("tab-columns") as HTMLInputElement;

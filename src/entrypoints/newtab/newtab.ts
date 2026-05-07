@@ -75,19 +75,14 @@ function onSystemThemeChange(event: MediaQueryListEvent) {
 }
 
 function applyLayout(settings: UserSettings) {
-  const bookmarksSection = document.getElementById(
-    "bookmarks-section",
-  ) as HTMLElement;
-  const readingListSection = document.getElementById(
-    "reading-list-section",
-  ) as HTMLElement;
+  const layout = document.getElementById("layout") as HTMLElement;
+  const bookmarksSection = document.getElementById("bookmarks-section") as HTMLElement;
+  const readingListSection = document.getElementById("reading-list-section") as HTMLElement;
   const tabsSection = document.getElementById("tabs-section") as HTMLElement;
 
-  bookmarksSection.style.flex = String(settings.bookmarkColumns);
-  bookmarksSection.style.columns = String(settings.bookmarkColumns);
-  readingListSection.style.flex = String(settings.readingListColumns);
-  readingListSection.style.columns = String(settings.readingListColumns);
-  tabsSection.style.flex = String(settings.tabColumns);
+  layout.style.gridTemplateColumns = `${settings.bookmarksAndListsColumns}fr ${settings.tabColumns}fr`;
+  bookmarksSection.style.columns = String(settings.bookmarksAndListsColumns);
+  readingListSection.style.columns = String(settings.bookmarksAndListsColumns);
   tabsSection.style.columns = String(settings.tabColumns);
 }
 

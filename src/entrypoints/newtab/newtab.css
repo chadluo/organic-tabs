@@ -46,16 +46,23 @@ body {
 }
 
 #layout {
-  display: flex;
+  display: grid;
   gap: 2rem;
-  align-items: flex-start;
+  align-items: start;
+}
+
+#left-column,
+#right-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 #bookmarks-section,
 #reading-list-section,
 #tabs-section {
   min-width: 0;
-  flex: 1;
   column-gap: 2rem;
 }
 
@@ -220,15 +227,17 @@ tab-link.duplicate-highlight {
   height: auto;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 600px) {
   body {
     padding: 14px;
   }
 
   #layout {
-    flex-direction: column;
+    grid-template-columns: 1fr !important;
   }
 
+  #left-column,
+  #right-column,
   #bookmarks-section,
   #reading-list-section,
   #tabs-section {
