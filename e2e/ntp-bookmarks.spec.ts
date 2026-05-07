@@ -9,15 +9,18 @@ const TEST_URLS = [
 ];
 
 let testFolderId: string;
+let testParentFolderId: string;
 
 test.beforeAll(async ({ browserCtx, extensionId }) => {
   const page = await browserCtx.newPage();
   await page.goto(`chrome-extension://${extensionId}/newtab.html`);
 
-  testFolderId = await page.evaluate(async (title) => {
+  const result = await page.evaluate(async (title) => {
     const folder = await chrome.bookmarks.create({ title });
-    return folder.id;
+    return { id: folder.id, parentId: folder.parentId! };
   }, FOLDER_TITLE);
+  testFolderId = result.id;
+  testParentFolderId = result.parentId;
 
   for (const url of TEST_URLS) {
     await page.evaluate(
@@ -42,19 +45,20 @@ test.afterAll(async ({ browserCtx, extensionId }) => {
 
 test("bookmark folder appears in bookmarks section", async ({ ntpPage }) => {
   const ntp = new NtpPage(ntpPage);
-  const folder = ntp.bookmarkFolder(testFolderId);
-  await expect(folder).toBeVisible();
+  // toContainText works on section text regardless of details open/closed state
   await expect(ntp.bookmarksSection()).toContainText(FOLDER_TITLE);
+  // Folder is in DOM but inside a collapsed parent folder — toBeAttached is sufficient
+  await expect(ntp.bookmarkFolder(testFolderId)).toBeAttached();
 });
 
 test("bookmark links appear inside their folder", async ({ ntpPage }) => {
   const ntp = new NtpPage(ntpPage);
-  const folder = ntp.bookmarkFolder(testFolderId);
-
-  await folder.locator("summary").click();
+  // Open the containing parent folder (Other Bookmarks), then the test folder
+  await ntp.openBookmarkFolder(testParentFolderId);
+  await ntp.openBookmarkFolder(testFolderId);
 
   for (const url of TEST_URLS) {
-    await expect(folder.locator(`bookmark-link[url="${url}"]`)).toBeVisible();
+    await expect(ntp.bookmarkFolder(testFolderId).locator(`bookmark-link[url="${url}"]`)).toBeVisible();
   }
 });
 
@@ -62,7 +66,8 @@ test("bookmark links are in bookmarks section, not reading list or tabs", async 
   ntpPage,
 }) => {
   const ntp = new NtpPage(ntpPage);
-  await ntp.bookmarkFolder(testFolderId).locator("summary").click();
+  await ntp.openBookmarkFolder(testParentFolderId);
+  await ntp.openBookmarkFolder(testFolderId);
 
   for (const url of TEST_URLS) {
     await expect(ntp.bookmarksSection().locator(`bookmark-link[url="${url}"]`)).toBeVisible();

@@ -5,6 +5,8 @@ import {
   type Page,
 } from "@playwright/test";
 import path from "path";
+import os from "os";
+import fs from "fs";
 
 const pathToExtension = path.resolve(".output/chrome-mv3");
 
@@ -14,16 +16,32 @@ type TestFixtures = { ntpPage: Page };
 export const test = base.extend<TestFixtures, WorkerFixtures>({
   browserCtx: [
     async ({}, use) => {
-      const ctx = await chromium.launchPersistentContext("", {
-        channel: "chrome",
+      // Pre-write Chrome preferences before launch — mirrors what web-ext does.
+      // Without developer_mode: true, Chrome silently ignores --load-extension.
+      const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "playwright-organic-tabs-"));
+      fs.mkdirSync(path.join(userDataDir, "Default"), { recursive: true });
+      fs.writeFileSync(
+        path.join(userDataDir, "Default", "Preferences"),
+        JSON.stringify({
+          extensions: { ui: { developer_mode: true } },
+          // Suppress "Change back to Google?" NTP override confirmation dialog
+          ack_existing_ntp_extensions: true,
+        }),
+      );
+
+      const ctx = await chromium.launchPersistentContext(userDataDir, {
         headless: false,
         args: [
           `--disable-extensions-except=${pathToExtension}`,
           `--load-extension=${pathToExtension}`,
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-default-apps",
         ],
       });
       await use(ctx);
       await ctx.close();
+      fs.rmSync(userDataDir, { recursive: true, force: true });
     },
     { scope: "worker" },
   ],

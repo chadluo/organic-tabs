@@ -460,10 +460,13 @@ async function loadReadingList() {
     return;
   }
 
+  // Fetch first, then clear — moving replaceChildren after the await prevents a
+  // race condition where two concurrent calls both append their elements because
+  // the first call's clear happens before the yield, leaving the section open
+  // for the second call to append without re-clearing.
+  const entries = await api.query({});
   const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
-
-  const entries = await api.query({});
   const unread = entries.filter((e) => !e.hasBeenRead);
   const read = entries.filter((e) => e.hasBeenRead);
 

@@ -77,6 +77,20 @@ export class NtpPage {
     return this.page.locator(`tab-link[url="${url}"]`);
   }
 
+  // ── Interaction helpers ───────────────────────────────────────────────────
+
+  /**
+   * Forces a bookmark folder <details> open via evaluate() rather than click().
+   * Using click() toggles — if the folder is already open it would close it.
+   * This is idempotent and survives DOM re-renders because trackDetails reads
+   * the updated detailsState on every loadBookmarks() call.
+   */
+  async openBookmarkFolder(folderId: string): Promise<void> {
+    await this.bookmarkFolder(folderId).evaluate((el) => {
+      (el as HTMLDetailsElement).open = true;
+    });
+  }
+
   // ── Drag helpers ──────────────────────────────────────────────────────────
 
   /**
