@@ -45,6 +45,24 @@ body {
   background: Canvas;
 }
 
+#ntp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+#ntp-title-input {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+#ntp-title-save {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+
 #layout {
   display: grid;
   gap: 2rem;

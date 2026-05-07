@@ -2,6 +2,8 @@ import {
   SETTINGS_KEY,
   defaultSettings,
   loadSettings,
+  loadNtpTitle,
+  saveNtpTitle,
   type Theme,
   type UserSettings,
 } from "../../utils/settings";
@@ -31,6 +33,33 @@ type DetailsState = Record<string, boolean>;
 let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
 let mediaQuery: MediaQueryList | null = null;
+
+function initTitleEditor(tabId: number, initialTitle: string) {
+  const input = document.getElementById("ntp-title-input") as HTMLInputElement;
+  const saveBtn = document.getElementById("ntp-title-save") as HTMLButtonElement;
+  input.value = initialTitle;
+
+  let savedTitle = initialTitle;
+
+  async function save() {
+    savedTitle = input.value;
+    document.title = savedTitle;
+    await saveNtpTitle(tabId, savedTitle);
+    saveBtn.hidden = true;
+    saveBtn.textContent = "Saved";
+    setTimeout(() => { saveBtn.textContent = "Save"; }, 1500);
+  }
+
+  input.addEventListener("input", () => {
+    saveBtn.hidden = input.value === savedTitle;
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") void save();
+  });
+
+  saveBtn.addEventListener("click", () => void save());
+}
 
 function loadState(): Promise<DetailsState> {
   return browser.storage.local
@@ -561,6 +590,13 @@ async function init() {
     return;
   }
 
+  const ownTab = await browser.tabs.getCurrent();
+  if (ownTab?.id !== undefined) {
+    const ownTabId = ownTab.id;
+    const initialTitle = await loadNtpTitle(ownTabId);
+    document.title = initialTitle;
+    initTitleEditor(ownTabId, initialTitle);
+  }
   applyTheme(settings.theme);
   applyLayout(settings);
 
