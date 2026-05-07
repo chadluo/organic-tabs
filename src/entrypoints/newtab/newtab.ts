@@ -270,6 +270,8 @@ if (!customElements.get("reading-list-link")) {
 function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
   if (node.url) {
     const li = document.createElement("li");
+    li.setAttribute("data-testid", "bookmark-item");
+    li.setAttribute("data-url", node.url);
     const link = document.createElement("bookmark-link");
     link.setAttribute("url", node.url);
     link.setAttribute("title", node.title || node.url);
@@ -280,6 +282,8 @@ function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
 
   if (node.children && node.children.length > 0) {
     const details = document.createElement("details");
+    details.setAttribute("data-testid", "bookmark-folder");
+    details.setAttribute("data-folder-id", node.id);
     const summary = document.createElement("summary");
     summary.textContent = node.title || "Bookmarks";
     details.appendChild(summary);
@@ -317,6 +321,8 @@ async function loadBookmarks() {
 
 function createTabLi(tab: CatalogTab): HTMLLIElement {
   const li = document.createElement("li");
+  li.setAttribute("data-testid", "tab-item");
+  li.setAttribute("data-url", tab.url ?? "");
   const tabData: TabDragData = {
     tabId: tab.id ?? 0,
     sourceWindowId: tab.windowId ?? 0,
@@ -353,6 +359,8 @@ async function loadTabs() {
 
   for (const windowRef of windows) {
     const details = document.createElement("details");
+    details.setAttribute("data-testid", "tab-window");
+    details.setAttribute("data-window-id", String(windowRef.id));
     trackDetails(details, `window:${windowRef.id}`, true);
     setupDropTarget(details, { type: "tab-window", windowId: windowRef.id });
 
@@ -394,6 +402,8 @@ async function loadTabs() {
       if (tabGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE && tabGroupId !== currentGroupId) {
         const group = groupMap.get(tabGroupId);
         const groupDetails = document.createElement("details");
+        groupDetails.setAttribute("data-testid", "tab-group");
+        groupDetails.setAttribute("data-group-id", String(tabGroupId));
         const collapsed = group?.collapsed ?? false;
         trackDetails(groupDetails, `tabgroup:${tabGroupId}`, !collapsed);
         setupDropTarget(groupDetails, { type: "tab-group", windowId: windowRef.id, groupId: tabGroupId });
@@ -430,6 +440,8 @@ async function loadTabs() {
 
 function createReadingListLi(entry: ReadingListEntry): HTMLLIElement {
   const li = document.createElement("li");
+  li.setAttribute("data-testid", "reading-list-item");
+  li.setAttribute("data-url", entry.url);
   makeReadingListDraggable(li, { url: entry.url, title: entry.title, hasBeenRead: entry.hasBeenRead });
 
   const link = document.createElement("reading-list-link");
@@ -456,6 +468,7 @@ async function loadReadingList() {
   const read = entries.filter((e) => e.hasBeenRead);
 
   const unreadDetails = document.createElement("details");
+  unreadDetails.setAttribute("data-testid", "reading-list-unread");
   trackDetails(unreadDetails, "readingList:unread", true);
   setupDropTarget(unreadDetails, { type: "reading-list-group", hasBeenRead: false });
   const unreadSummary = document.createElement("summary");
@@ -467,6 +480,7 @@ async function loadReadingList() {
   section.appendChild(unreadDetails);
 
   const readDetails = document.createElement("details");
+  readDetails.setAttribute("data-testid", "reading-list-read");
   trackDetails(readDetails, "readingList:read", false);
   setupDropTarget(readDetails, { type: "reading-list-group", hasBeenRead: true });
   const readSummary = document.createElement("summary");

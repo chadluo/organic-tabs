@@ -12,9 +12,13 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "pretest:e2e": "wxt build",
+    "test:e2e": "playwright test",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/chrome": "^0.1.40",
     "typescript": "^5.9.3",
     "wxt": "^0.20.25"
   }
