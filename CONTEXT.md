@@ -44,7 +44,8 @@ suite.
 **Mutating test suite**: A Playwright suite where Chrome APIs are modified by the test actions (e.g., drag-and-drop that
 creates bookmarks or adds reading list entries). Uses a fresh temp user-data-dir per suite to guarantee isolation.
 
-Both suite types seed data via `page.evaluate()` in a shared Playwright fixture on the NTP page (`chrome-extension://<id>/newtab.html`), which has full access to `chrome.*` APIs.
+Both suite types seed data via `page.evaluate()` in a shared Playwright fixture on the NTP page
+(`chrome-extension://<id>/newtab.html`), which has full access to `chrome.*` APIs.
 
 **DOM membership assertion**: Given a link URL or title, assert it appears within the correct Section's DOM subtree,
 under the correct group (`<details>` for bookmark folder / Window, or Reading List Group for Unread/Read). Exact
