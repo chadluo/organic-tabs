@@ -13,6 +13,7 @@ import { renderBookmarks } from "./renderBookmarks";
 import { renderTabs } from "./renderTabs";
 import { renderReadingList } from "./renderReadingList";
 import { initTitleEditor } from "./titleEditor";
+import { initEventCoordinator } from "./eventCoordinator";
 
 const STORAGE_KEY = "detailsState";
 
@@ -158,26 +159,11 @@ function onSettingsChanged(newSettings: UserSettings) {
   currentSettings = newSettings;
 }
 
-browser.tabs.onCreated.addListener(() => { void loadTabs(); });
-browser.tabs.onRemoved.addListener(() => { void loadTabs(); });
-browser.tabs.onUpdated.addListener(() => { void loadTabs(); });
-browser.tabs.onMoved.addListener(() => { void loadTabs(); });
-browser.tabs.onActivated.addListener(() => { void loadTabs(); });
-browser.tabGroups.onCreated.addListener(() => { void loadTabs(); });
-browser.tabGroups.onUpdated.addListener(() => { void loadTabs(); });
-browser.tabGroups.onRemoved.addListener(() => { void loadTabs(); });
-
-browser.bookmarks.onCreated.addListener(() => { void loadBookmarks(); });
-browser.bookmarks.onRemoved.addListener(() => { void loadBookmarks(); });
-browser.bookmarks.onChanged.addListener(() => { void loadBookmarks(); });
-browser.bookmarks.onMoved.addListener(() => { void loadBookmarks(); });
-
-const readingListApi = getReadingListApi();
-if (readingListApi) {
-  readingListApi.onEntryAdded.addListener(() => void loadReadingList());
-  readingListApi.onEntryRemoved.addListener(() => void loadReadingList());
-  readingListApi.onEntryUpdated.addListener(() => void loadReadingList());
-}
+initEventCoordinator(
+  () => void loadTabs(),
+  () => void loadBookmarks(),
+  () => void loadReadingList(),
+);
 
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes[SETTINGS_KEY]) {

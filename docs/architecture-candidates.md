@@ -27,7 +27,7 @@ cannot be unit-tested because it is entangled with DOM events.
 
 ---
 
-## 3 — Browser event coordinator in `newtab.ts`
+## 3 — Browser event coordinator in `newtab.ts` ✅ done (commit: refactor(newtab/events))
 
 **File:** `src/entrypoints/newtab/newtab.ts` (bottom of file)
 
