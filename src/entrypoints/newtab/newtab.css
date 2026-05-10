@@ -84,9 +84,9 @@ body {
   column-gap: 2rem;
 }
 
-#bookmarks-section > h2,
-#reading-list-section > h2,
-#tabs-section > h2 {
+#bookmarks-section>h2,
+#reading-list-section>h2,
+#tabs-section>h2 {
   margin: 0 0 0.8rem;
   column-span: all;
   font-size: 1rem;
@@ -96,11 +96,10 @@ body {
 }
 
 details {
-  margin-left: 0.75rem;
   break-inside: avoid;
 }
 
-details > summary {
+details>summary {
   cursor: pointer;
   padding: 0.2rem 0;
   font-weight: 600;
@@ -108,11 +107,11 @@ details > summary {
   list-style-type: disclosure-closed;
 }
 
-details > summary:hover {
+details>summary:hover {
   color: var(--color-link);
 }
 
-details > summary.current-window {
+details>summary.current-window {
   font-weight: 800;
 }
 
@@ -133,7 +132,7 @@ details > summary.current-window {
   color: var(--color-link);
 }
 
-details[open] > summary {
+details[open]>summary {
   list-style-type: disclosure-open;
 }
 

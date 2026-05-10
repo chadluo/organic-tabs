@@ -41,3 +41,5 @@ Build for production:
 ```bash
 pnpm build
 ```
+
+Icon: [Irasutoya](https://www.irasutoya.com/2016/11/blog-post_195.html)

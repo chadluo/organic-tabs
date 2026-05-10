@@ -5,6 +5,10 @@ export default defineConfig({
   manifest: {
     name: "Organic Tabs",
     description: "Unified new tab page, tab sorter, and tab shifter extension.",
+    icons: {
+      '48': 'icon/48.png',
+      '128': 'icon/128.png'
+    },
     version: "1.0.0",
     permissions: [
       "bookmarks",
@@ -15,6 +19,7 @@ export default defineConfig({
       "tabs",
       "windows",
     ],
+
     host_permissions: ["<all_urls>"],
     commands: {
       "sort-tabs": {
