@@ -11,6 +11,7 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
+    "test": "vitest run",
     "compile": "tsc --noEmit",
     "pretest:e2e": "wxt build",
     "test:e2e": "playwright test",
@@ -20,6 +21,7 @@
     "@playwright/test": "^1.59.1",
     "@types/chrome": "^0.1.40",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.5",
     "wxt": "^0.20.25"
   }
 }
