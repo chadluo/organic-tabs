@@ -1,4 +1,4 @@
-import type { Direction } from "./settings";
+export type Direction = "up" | "down" | "left" | "right";
 
 export interface ShiftWindow {
   id?: number;
@@ -9,15 +9,7 @@ export interface ShiftWindow {
   height?: number;
 }
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface EdgeMidpoints {
-  current: Point;
-  candidate: Point;
-}
+// #region Cyclic
 
 /**
  * Cyclic fallback used when the current window is maximized or fullscreen,
@@ -43,66 +35,50 @@ export function findCyclicTarget(
   return sorted[nextIdx] ?? null;
 }
 
-function getEdgeMidpoints(w: ShiftWindow, direction: Direction): EdgeMidpoints {
-  const left = w.left ?? 0;
-  const top = w.top ?? 0;
-  const width = w.width ?? 0;
-  const height = w.height ?? 0;
+// #endregion Cyclic
 
-  switch (direction) {
-    case "right":
-      return {
-        current: { x: left + width, y: top + height / 2 },
-        candidate: { x: left, y: top + height / 2 },
-      };
-    case "left":
-      return {
-        current: { x: left, y: top + height / 2 },
-        candidate: { x: left + width, y: top + height / 2 },
-      };
-    case "down":
-      return {
-        current: { x: left + width / 2, y: top + height },
-        candidate: { x: left + width / 2, y: top },
-      };
-    case "up":
-      return {
-        current: { x: left + width / 2, y: top },
-        candidate: { x: left + width / 2, y: top + height },
-      };
-  }
-}
+// #region Geometric
 
 /**
- * Finds the nearest window in `direction` by comparing the relevant-axis
- * distance between edge midpoints (horizontal for left/right, vertical for
- * up/down), so a window directly above ranks ahead of a diagonal one.
+ * Finds the nearest window in `direction` by sorting all candidates by their
+ * same-side edge and picking the first one that extends past the current
+ * window's same-side edge. Works for both tiling and stacking (overlapping)
+ * windows.
+ *
+ * - right: sort ascending by right edge, find first where candidate.right > current.right
+ * - left:  sort ascending by left edge,  findLast where candidate.left < current.left
+ * - down:  sort ascending by bottom edge, find first where candidate.bottom > current.bottom
+ * - up:    sort ascending by top edge,   findLast where candidate.top < current.top
  */
 export function findGeometricTarget(
   windows: ShiftWindow[],
   currentWindow: ShiftWindow,
   direction: Direction,
 ): ShiftWindow | null {
-  const { current: refPoint } = getEdgeMidpoints(currentWindow, direction);
-
   const candidates = windows.filter((w) => w.id !== currentWindow.id);
   if (candidates.length === 0) {
     return null;
   }
 
-  const isHorizontal = direction === "left" || direction === "right";
+  const curLeft = currentWindow.left ?? 0;
+  const curTop = currentWindow.top ?? 0;
+  const curRight = curLeft + (currentWindow.width ?? 0);
+  const curBottom = curTop + (currentWindow.height ?? 0);
 
-  candidates.sort((a, b) => {
-    const { candidate: ca } = getEdgeMidpoints(a, direction);
-    const { candidate: cb } = getEdgeMidpoints(b, direction);
-    const da = isHorizontal
-      ? Math.abs(ca.x - refPoint.x)
-      : Math.abs(ca.y - refPoint.y);
-    const db = isHorizontal
-      ? Math.abs(cb.x - refPoint.x)
-      : Math.abs(cb.y - refPoint.y);
-    return da - db;
-  });
-
-  return candidates[0] ?? null;
+  switch (direction) {
+    case "right":
+      candidates.sort((a, b) => (a.left ?? 0) + (a.width ?? 0) - ((b.left ?? 0) + (b.width ?? 0)));
+      return candidates.find((c) => (c.left ?? 0) + (c.width ?? 0) > curRight) ?? null;
+    case "left":
+      candidates.sort((a, b) => (a.left ?? 0) - (b.left ?? 0));
+      return candidates.findLast((c) => (c.left ?? 0) < curLeft) ?? null;
+    case "down":
+      candidates.sort((a, b) => (a.top ?? 0) + (a.height ?? 0) - ((b.top ?? 0) + (b.height ?? 0)));
+      return candidates.find((c) => (c.top ?? 0) + (c.height ?? 0) > curBottom) ?? null;
+    case "up":
+      candidates.sort((a, b) => (a.top ?? 0) - (b.top ?? 0));
+      return candidates.findLast((c) => (c.top ?? 0) < curTop) ?? null;
+  }
 }
+
+// #endregion Geometric
