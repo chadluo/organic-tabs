@@ -40,7 +40,7 @@ debouncing. One fix, all 11 listeners benefit.
 
 ---
 
-## 4 — Unified storage adapter for settings and preview
+## 4 — Unified storage adapter for settings and preview ✅ done (commit: refactor(storage))
 
 **Files:** `src/utils/settings.ts`, `src/utils/preview.ts`
 
