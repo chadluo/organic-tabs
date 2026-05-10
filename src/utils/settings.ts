@@ -1,6 +1,5 @@
 export type Theme = "system" | "light" | "dark";
 export type SortMode = "title" | "website" | "lastAccessed";
-export type Direction = "up" | "down" | "left" | "right";
 
 export interface UserSettings {
   theme: Theme;

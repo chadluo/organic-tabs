@@ -1,4 +1,5 @@
-import type { Direction, SortMode } from "./settings";
+import type { SortMode } from "./settings";
+import type { Direction } from "./shift";
 
 export type BackgroundMessage =
   | { action: "sortByTitle" }

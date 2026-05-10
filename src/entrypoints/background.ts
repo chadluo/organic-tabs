@@ -1,13 +1,13 @@
-import { loadSettings, type Direction } from "../utils/settings";
+import type { BackgroundMessage, BackgroundResponse } from "../utils/messages";
+import { evictPreview, storePreview } from "../utils/preview";
+import { loadSettings, } from "../utils/settings";
+import { findCyclicTarget, findGeometricTarget, type Direction } from "../utils/shift";
 import {
-  sortTabsByMode,
+  sortByLastAccessed,
   sortByTitle,
   sortByWebsite,
-  sortByLastAccessed,
+  sortTabsByMode,
 } from "../utils/sort";
-import { findCyclicTarget, findGeometricTarget } from "../utils/shift";
-import type { BackgroundMessage, BackgroundResponse } from "../utils/messages";
-import { storePreview, evictPreview } from "../utils/preview";
 
 /** Per-window debounce: capture fires 3 s after the last activation to skip rapid tab switching. */
 const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();

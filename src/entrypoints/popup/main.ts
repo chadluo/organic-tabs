@@ -4,11 +4,11 @@ import {
   defaultSettings,
   loadSettings,
   saveSettings,
-  type Direction,
   type SortMode,
   type Theme,
   type UserSettings,
 } from "../../utils/settings";
+import type { Direction } from "../../utils/shift";
 import { sendToBackground, sortModeToAction } from "../../utils/messages";
 
 let settings = { ...defaultSettings };
