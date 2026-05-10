@@ -1,5 +1,5 @@
 export type Theme = "system" | "light" | "dark";
-export type SortMode = "title" | "website" | "lastAccessed";
+import type { SortMode } from "./sort";
 
 export interface UserSettings {
   theme: Theme;

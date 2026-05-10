@@ -1,15 +1,7 @@
-export {};
-
-import {
-  defaultSettings,
-  loadSettings,
-  saveSettings,
-  type SortMode,
-  type Theme,
-  type UserSettings,
-} from "../../utils/settings";
-import type { Direction } from "../../utils/shift";
 import { sendToBackground, sortModeToAction } from "../../utils/messages";
+import { defaultSettings, loadSettings, saveSettings, type Theme, type UserSettings } from "../../utils/settings";
+import type { Direction } from "../../utils/shift";
+import type { SortMode } from "../../utils/sort";
 
 let settings = { ...defaultSettings };
 

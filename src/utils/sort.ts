@@ -1,4 +1,4 @@
-import type { SortMode } from "./settings";
+export type SortMode = "title" | "website" | "lastAccessed";
 
 export interface SortableTab {
   id?: number;
