@@ -13,7 +13,7 @@ fused: fetch catalog → build DOM → attach drop targets → wire buttons → 
 
 ---
 
-## 2 — Drop policy extraction from `drag.ts`
+## 2 — Drop policy extraction from `drag.ts` ✅ done (commit: refactor(drag))
 
 **File:** `src/entrypoints/newtab/drag.ts`
 

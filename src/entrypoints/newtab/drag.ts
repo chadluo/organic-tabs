@@ -176,9 +176,59 @@ export function makeBookmarkDraggable(
 }
 
 /**
+ * Executes the drop action for a given DataTransfer and destination config.
+ * All 12 policy paths (3 drag types × 4 destination configs) live here.
+ * Adding a new destination means adding one branch; event wiring is unaffected.
+ */
+function executeDrop(dt: DataTransfer, config: DropTargetConfig): void {
+  const dragType = getDragType(dt.types);
+  if (!dragType) return;
+
+  if (config.type === "tab-window" || config.type === "tab-group") {
+    const { windowId } = config;
+    const groupId = config.type === "tab-group" ? config.groupId : undefined;
+    if (dragType === "tab") {
+      void applyTabDrop(JSON.parse(dt.getData(TAB_MIME)) as TabDragData, windowId, groupId);
+    } else if (dragType === "reading-list") {
+      void openNewTab((JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData).url, windowId, groupId);
+    } else if (dragType === "bookmark") {
+      void openNewTab((JSON.parse(dt.getData(BM_MIME)) as BookmarkDragData).url, windowId, groupId);
+    }
+  } else if (config.type === "reading-list-group") {
+    if (dragType === "reading-list") {
+      const data = JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData;
+      if (data.hasBeenRead === config.hasBeenRead) return;
+      if (
+        config.hasBeenRead &&
+        !window.confirm(`Are you sure you want to add "${data.title || data.url}" to the Reading List as Read?`)
+      ) return;
+      void getReadingListApi()?.updateEntry({ url: data.url, hasBeenRead: config.hasBeenRead });
+    } else if (dragType === "tab") {
+      const data = JSON.parse(dt.getData(TAB_MIME)) as TabDragData;
+      void addToReadingList(data.url, data.title, config.hasBeenRead);
+    } else if (dragType === "bookmark") {
+      const data = JSON.parse(dt.getData(BM_MIME)) as BookmarkDragData;
+      void addToReadingList(data.url, data.title, config.hasBeenRead);
+    }
+  } else if (config.type === "bookmark-folder") {
+    if (dragType === "bookmark") {
+      const data = JSON.parse(dt.getData(BM_MIME)) as BookmarkDragData;
+      void browser.bookmarks.move(data.id, { parentId: config.folderId });
+    } else if (dragType === "reading-list") {
+      const data = JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData;
+      void browser.bookmarks.create({ parentId: config.folderId, url: data.url, title: data.title || data.url });
+    } else if (dragType === "tab") {
+      const data = JSON.parse(dt.getData(TAB_MIME)) as TabDragData;
+      void browser.bookmarks.create({ parentId: config.folderId, url: data.url, title: data.title || data.url });
+    }
+  }
+}
+
+/**
  * Attaches dragenter/dragover/dragleave/drop handlers to a `<details>` element.
  * Only one target is "active" at a time via module-level state to prevent
  * spurious dragleave events from nested child elements triggering a false leave.
+ * Drop execution is delegated to executeDrop().
  */
 export function setupDropTarget(
   details: HTMLDetailsElement,
@@ -225,76 +275,6 @@ export function setupDropTarget(
       activeDragTarget = null;
       activeDragType = null;
     }
-
-    const dt = e.dataTransfer;
-    if (!dt) return;
-    const dragType = getDragType(dt.types);
-    if (!dragType) return;
-
-    if (config.type === "tab-window" || config.type === "tab-group") {
-      const { windowId } = config;
-      const groupId = config.type === "tab-group" ? config.groupId : undefined;
-      if (dragType === "tab") {
-        void applyTabDrop(
-          JSON.parse(dt.getData(TAB_MIME)) as TabDragData,
-          windowId,
-          groupId,
-        );
-      } else if (dragType === "reading-list") {
-        void openNewTab(
-          (JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData).url,
-          windowId,
-          groupId,
-        );
-      } else if (dragType === "bookmark") {
-        void openNewTab(
-          (JSON.parse(dt.getData(BM_MIME)) as BookmarkDragData).url,
-          windowId,
-          groupId,
-        );
-      }
-    } else if (config.type === "reading-list-group") {
-      if (dragType === "reading-list") {
-        const data = JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData;
-        if (data.hasBeenRead === config.hasBeenRead) return;
-        if (
-          config.hasBeenRead &&
-          !window.confirm(
-            `Are you sure you want to add "${data.title || data.url}" to the Reading List as Read?`,
-          )
-        ) {
-          return;
-        }
-        void getReadingListApi()?.updateEntry({
-          url: data.url,
-          hasBeenRead: config.hasBeenRead,
-        });
-      } else if (dragType === "tab") {
-        const data = JSON.parse(dt.getData(TAB_MIME)) as TabDragData;
-        void addToReadingList(data.url, data.title, config.hasBeenRead);
-      } else if (dragType === "bookmark") {
-        const data = JSON.parse(dt.getData(BM_MIME)) as BookmarkDragData;
-        void addToReadingList(data.url, data.title, config.hasBeenRead);
-      }
-    } else if (config.type === "bookmark-folder") {
-      if (dragType === "bookmark") {
-        const data = JSON.parse(dt.getData(BM_MIME)) as BookmarkDragData;
-        void browser.bookmarks.move(data.id, { parentId: config.folderId });
-      } else if (dragType === "reading-list") {
-        const data = JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData;
-        void browser.bookmarks.create({
-          parentId: config.folderId,
-          url: data.url,
-          title: data.title || data.url,
-        });
-      } else if (dragType === "tab") {
-        const data = JSON.parse(dt.getData(TAB_MIME)) as TabDragData;
-        void browser.bookmarks.create({
-          parentId: config.folderId,
-          url: data.url,
-          title: data.title || data.url,
-        });
-      }
-    }
+    if (e.dataTransfer) executeDrop(e.dataTransfer, config);
   });
 }
