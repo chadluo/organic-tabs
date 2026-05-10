@@ -1,4 +1,4 @@
-import type { SortMode } from "./settings";
+import type { SortMode } from "./sort";
 import type { Direction } from "./shift";
 
 export type BackgroundMessage =

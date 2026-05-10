@@ -3,28 +3,16 @@ import {
   defaultSettings,
   loadSettings,
   loadNtpTitle,
-  saveNtpTitle,
   type Theme,
   type UserSettings,
 } from "../../utils/settings";
 import { sortTabsByMode } from "../../utils/sort";
-import { retrievePreview } from "../../utils/preview";
-import {
-  loadTabCatalog,
-  loadBookmarkCatalog,
-  type CatalogTab,
-  type BookmarkNode,
-} from "../../utils/catalog";
-import {
-  initDrag,
-  setupDropTarget,
-  makeTabDraggable,
-  makeReadingListDraggable,
-  makeBookmarkDraggable,
-  getReadingListApi,
-  type ReadingListEntry,
-  type TabDragData,
-} from "./drag";
+import { loadTabCatalog, loadBookmarkCatalog } from "../../utils/catalog";
+import { initDrag, setupDropTarget, getReadingListApi } from "./drag";
+import { renderBookmarks } from "./renderBookmarks";
+import { renderTabs } from "./renderTabs";
+import { renderReadingList } from "./renderReadingList";
+import { initTitleEditor } from "./titleEditor";
 
 const STORAGE_KEY = "detailsState";
 
@@ -34,33 +22,6 @@ let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
 let mediaQuery: MediaQueryList | null = null;
 
-function initTitleEditor(tabId: number, initialTitle: string) {
-  const input = document.getElementById("ntp-title-input") as HTMLInputElement;
-  const saveBtn = document.getElementById("ntp-title-save") as HTMLButtonElement;
-  input.value = initialTitle;
-
-  let savedTitle = initialTitle;
-
-  async function save() {
-    savedTitle = input.value;
-    document.title = savedTitle;
-    await saveNtpTitle(tabId, savedTitle);
-    saveBtn.hidden = true;
-    saveBtn.textContent = "Saved";
-    setTimeout(() => { saveBtn.textContent = "Save"; }, 1500);
-  }
-
-  input.addEventListener("input", () => {
-    saveBtn.hidden = input.value === savedTitle;
-  });
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") void save();
-  });
-
-  saveBtn.addEventListener("click", () => void save());
-}
-
 function loadState(): Promise<DetailsState> {
   return browser.storage.local
     .get(STORAGE_KEY)
@@ -69,6 +30,16 @@ function loadState(): Promise<DetailsState> {
 
 function saveState(state: DetailsState) {
   return browser.storage.local.set({ [STORAGE_KEY]: state });
+}
+
+/** Attaches a toggle listener that persists open/close state to storage. */
+function wireDetailsToggle(el: HTMLDetailsElement): void {
+  const key = el.dataset.stateKey;
+  if (!key) return;
+  el.addEventListener("toggle", () => {
+    detailsState[key] = el.open;
+    void saveState(detailsState);
+  });
 }
 
 function applyTheme(theme: Theme) {
@@ -115,364 +86,44 @@ function applyLayout(settings: UserSettings) {
   tabsSection.style.columns = String(settings.tabColumns);
 }
 
-function trackDetails(
-  details: HTMLDetailsElement,
-  key: string,
-  fallback: boolean,
-) {
-  details.open = detailsState[key] ?? fallback;
-  details.addEventListener("toggle", () => {
-    detailsState[key] = details.open;
-    void saveState(detailsState);
-  });
-}
-
-
-function faviconUrl(pageUrl: string): string {
-  if (!pageUrl) {
-    return "";
-  }
-
-  const encoded = encodeURIComponent(pageUrl);
-  return `chrome-extension://${browser.runtime.id}/_favicon/?pageUrl=${encoded}&size=16`;
-}
-
-function hostname(pageUrl: string): string {
-  try {
-    return new URL(pageUrl).hostname;
-  } catch {
-    return "";
-  }
-}
-
-function setSoftWrappingTitle(el: HTMLElement, title: string) {
-  const parts = title.split("/");
-  el.appendChild(document.createTextNode(parts[0] ?? ""));
-
-  for (let i = 1; i < parts.length; i += 1) {
-    el.appendChild(document.createElement("wbr"));
-    el.appendChild(document.createTextNode(`/${parts[i]}`));
-  }
-}
-
-function populateLink(
-  content: DocumentFragment,
-  url: string,
-  faviconOverride = "",
-) {
-  const img = content.querySelector(".favicon") as HTMLImageElement;
-  const host = content.querySelector(".hostname") as HTMLSpanElement;
-  const anchor = content.querySelector(".link") as HTMLAnchorElement;
-
-  img.src = faviconOverride || faviconUrl(url);
-  host.textContent = hostname(url);
-  if (!anchor.textContent) {
-    setSoftWrappingTitle(anchor, url);
-  }
-}
-
-class BookmarkLink extends HTMLElement {
-  connectedCallback() {
-    const template = document.getElementById(
-      "bookmark-link-template",
-    ) as HTMLTemplateElement;
-    const content = template.content.cloneNode(true) as DocumentFragment;
-    const url = this.getAttribute("url") ?? "";
-    const title = this.getAttribute("title") || url;
-    const anchor = content.querySelector(".link") as HTMLAnchorElement;
-
-    anchor.href = url;
-    setSoftWrappingTitle(anchor, title);
-
-    if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
-      anchor.addEventListener("click", (event) => {
-        event.preventDefault();
-        void browser.tabs.update({ url });
-      });
-    }
-
-    populateLink(content, url);
-    this.appendChild(content);
-  }
-}
-
-class TabLink extends HTMLElement {
-  connectedCallback() {
-    const tabId = Number(this.getAttribute("tab-id"));
-    const windowId = Number(this.getAttribute("window-id"));
-    const url = this.getAttribute("url") ?? "";
-
-    const template = document.getElementById(
-      "tab-link-template",
-    ) as HTMLTemplateElement;
-    const content = template.content.cloneNode(true) as DocumentFragment;
-    const anchor = content.querySelector(".link") as HTMLAnchorElement;
-
-    setSoftWrappingTitle(anchor, this.getAttribute("title") || "Untitled");
-    anchor.addEventListener("click", (event) => {
-      event.preventDefault();
-      void browser.tabs.update(tabId, { active: true });
-      void browser.windows.update(windowId, { focused: true });
-    });
-
-    const faviconOverride = this.getAttribute("favicon") ?? "";
-    populateLink(content, url, faviconOverride);
-    this.appendChild(content);
-
-    this.addEventListener("mouseenter", (event: MouseEvent) => {
-      void this.showPreview(url, tabId, event);
-    });
-
-    this.addEventListener("mouseleave", () => {
-      document
-        .querySelectorAll(".duplicate-highlight")
-        .forEach((el) => el.classList.remove("duplicate-highlight"));
-      document.querySelectorAll(".tab-preview").forEach((el) => el.remove());
-    });
-  }
-
-  private async showPreview(url: string, tabId: number, event: MouseEvent) {
-    document
-      .querySelectorAll(`tab-link[url="${CSS.escape(url)}"]`)
-      .forEach((el) => {
-        if (el !== this) {
-          el.classList.add("duplicate-highlight");
-        }
-      });
-
-    const dataUrl = await retrievePreview(tabId);
-    if (!dataUrl) {
-      return;
-    }
-
-    const preview = document.createElement("div");
-    preview.className = "tab-preview";
-    const image = document.createElement("img");
-    image.src = dataUrl;
-    preview.appendChild(image);
-    document.body.appendChild(preview);
-
-    const previewWidth = 320;
-    const left =
-      event.clientX + previewWidth + 16 > window.innerWidth
-        ? event.clientX - previewWidth - 8
-        : event.clientX + 12;
-    preview.style.left = `${left}px`;
-    preview.style.top = `${Math.max(8, event.clientY + 12)}px`;
-  }
-}
-
-class ReadingListLink extends HTMLElement {
-  connectedCallback() {
-    const template = document.getElementById(
-      "reading-list-link-template",
-    ) as HTMLTemplateElement;
-    const content = template.content.cloneNode(true) as DocumentFragment;
-    const url = this.getAttribute("url") ?? "";
-    const title = this.getAttribute("title") || url;
-    const anchor = content.querySelector(".link") as HTMLAnchorElement;
-
-    anchor.href = url;
-    setSoftWrappingTitle(anchor, title);
-    populateLink(content, url);
-    this.appendChild(content);
-  }
-}
-
-if (!customElements.get("bookmark-link")) {
-  customElements.define("bookmark-link", BookmarkLink);
-}
-
-if (!customElements.get("tab-link")) {
-  customElements.define("tab-link", TabLink);
-}
-
-if (!customElements.get("reading-list-link")) {
-  customElements.define("reading-list-link", ReadingListLink);
-}
-
-function renderBookmarkNode(node: BookmarkNode): HTMLElement | null {
-  if (node.url) {
-    const li = document.createElement("li");
-    li.setAttribute("data-testid", "bookmark-item");
-    li.setAttribute("data-url", node.url);
-    const link = document.createElement("bookmark-link");
-    link.setAttribute("url", node.url);
-    link.setAttribute("title", node.title || node.url);
-    li.appendChild(link);
-    makeBookmarkDraggable(li, { id: node.id, url: node.url, title: node.title || node.url });
-    return li;
-  }
-
-  if (node.children && node.children.length > 0) {
-    const details = document.createElement("details");
-    details.setAttribute("data-testid", "bookmark-folder");
-    details.setAttribute("data-folder-id", node.id);
-    const summary = document.createElement("summary");
-    summary.textContent = node.title || "Bookmarks";
-    details.appendChild(summary);
-    trackDetails(details, `bookmark:${node.id}`, false);
-    setupDropTarget(details, { type: "bookmark-folder", folderId: node.id });
-
-    const ul = document.createElement("ul");
-    for (const child of node.children) {
-      const rendered = renderBookmarkNode(child);
-      if (rendered) {
-        ul.appendChild(rendered);
-      }
-    }
-
-    details.appendChild(ul);
-    return details;
-  }
-
-  return null;
-}
-
 async function loadBookmarks() {
   const topFolders = await loadBookmarkCatalog();
   const section = document.getElementById("bookmarks-section") as HTMLElement;
   const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
-
-  for (const folder of topFolders) {
-    const rendered = renderBookmarkNode(folder);
-    if (rendered) {
-      section.appendChild(rendered);
-    }
-  }
-}
-
-function createTabLi(tab: CatalogTab): HTMLLIElement {
-  const li = document.createElement("li");
-  li.setAttribute("data-testid", "tab-item");
-  li.setAttribute("data-url", tab.url ?? "");
-  const tabData: TabDragData = {
-    tabId: tab.id ?? 0,
-    sourceWindowId: tab.windowId ?? 0,
-    sourceGroupId: tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE,
-    url: tab.url ?? "",
-    title: tab.title ?? "",
-  };
-  makeTabDraggable(li, tabData);
-  const link = document.createElement("tab-link");
-
-  if (tab.id !== undefined) {
-    link.setAttribute("tab-id", String(tab.id));
-  }
-  if (tab.windowId !== undefined) {
-    link.setAttribute("window-id", String(tab.windowId));
-  }
-  link.setAttribute("title", tab.title || tab.url || "");
-  link.setAttribute("url", tab.url || "");
-
-  if (tab.favIconUrl) {
-    link.setAttribute("favicon", tab.favIconUrl);
-  }
-
-  li.appendChild(link);
-  return li;
+  section.appendChild(renderBookmarks(topFolders, detailsState));
+  section.querySelectorAll<HTMLDetailsElement>("[data-testid='bookmark-folder']").forEach((el) => {
+    wireDetailsToggle(el);
+    setupDropTarget(el, { type: "bookmark-folder", folderId: el.dataset.folderId! });
+  });
 }
 
 async function loadTabs() {
-  const { windows, groups: groupMap } = await loadTabCatalog();
-
+  const catalog = await loadTabCatalog();
   const section = document.getElementById("tabs-section") as HTMLElement;
   const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
-
-  for (const windowRef of windows) {
-    const details = document.createElement("details");
-    details.setAttribute("data-testid", "tab-window");
-    details.setAttribute("data-window-id", String(windowRef.id));
-    trackDetails(details, `window:${windowRef.id}`, true);
-    setupDropTarget(details, { type: "tab-window", windowId: windowRef.id });
-
-    const activeTab = windowRef.tabs.find((tab) => tab.active);
-    const windowLabel = activeTab
-      ? `${activeTab.title} (${windowRef.tabs.length} tabs)`
-      : `Window (${windowRef.tabs.length} tabs)`;
-
-    const summary = document.createElement("summary");
-    summary.classList.add("window-summary");
-    if (windowRef.isCurrent) {
-      summary.classList.add("current-window");
-    }
-
-    const labelSpan = document.createElement("span");
-    labelSpan.textContent = windowLabel;
-    summary.appendChild(labelSpan);
-
-    const sortBtn = document.createElement("button");
-    sortBtn.className = "sort-btn";
-    sortBtn.title = `Sort tabs by ${currentSettings.defaultSortMode}`;
-    sortBtn.textContent = "⇅";
-    sortBtn.addEventListener("click", (e) => {
+  section.appendChild(renderTabs(catalog, detailsState));
+  section.querySelectorAll<HTMLDetailsElement>("[data-testid='tab-window']").forEach((el) => {
+    wireDetailsToggle(el);
+    setupDropTarget(el, { type: "tab-window", windowId: Number(el.dataset.windowId) });
+  });
+  section.querySelectorAll<HTMLDetailsElement>("[data-testid='tab-group']").forEach((el) => {
+    wireDetailsToggle(el);
+    setupDropTarget(el, {
+      type: "tab-group",
+      windowId: Number(el.dataset.windowId),
+      groupId: Number(el.dataset.groupId),
+    });
+  });
+  section.querySelectorAll<HTMLButtonElement>(".sort-btn").forEach((btn) => {
+    btn.title = `Sort tabs by ${currentSettings.defaultSortMode}`;
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      void sortTabsByMode(currentSettings.defaultSortMode, windowRef.id);
+      void sortTabsByMode(currentSettings.defaultSortMode, Number(btn.dataset.windowId));
     });
-    summary.appendChild(sortBtn);
-
-    details.appendChild(summary);
-
-    const ul = document.createElement("ul");
-
-    let currentGroupId: number = browser.tabGroups.TAB_GROUP_ID_NONE;
-    let groupUl: HTMLUListElement | null = null;
-
-    for (const tab of windowRef.tabs) {
-      const tabGroupId = tab.groupId ?? browser.tabGroups.TAB_GROUP_ID_NONE;
-      if (tabGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE && tabGroupId !== currentGroupId) {
-        const group = groupMap.get(tabGroupId);
-        const groupDetails = document.createElement("details");
-        groupDetails.setAttribute("data-testid", "tab-group");
-        groupDetails.setAttribute("data-group-id", String(tabGroupId));
-        const collapsed = group?.collapsed ?? false;
-        trackDetails(groupDetails, `tabgroup:${tabGroupId}`, !collapsed);
-        setupDropTarget(groupDetails, { type: "tab-group", windowId: windowRef.id, groupId: tabGroupId });
-
-        const groupSummary = document.createElement("summary");
-        groupSummary.textContent = group?.title || "Unnamed Group";
-        if (group?.color) {
-          groupSummary.classList.add(`group-${group.color}`);
-        }
-        groupDetails.appendChild(groupSummary);
-
-        groupUl = document.createElement("ul");
-        groupDetails.appendChild(groupUl);
-
-        const li = document.createElement("li");
-        li.appendChild(groupDetails);
-        ul.appendChild(li);
-      }
-
-      if (tabGroupId !== browser.tabGroups.TAB_GROUP_ID_NONE) {
-        currentGroupId = tabGroupId;
-        groupUl?.appendChild(createTabLi(tab));
-      } else {
-        currentGroupId = browser.tabGroups.TAB_GROUP_ID_NONE;
-        groupUl = null;
-        ul.appendChild(createTabLi(tab));
-      }
-    }
-
-    details.appendChild(ul);
-    section.appendChild(details);
-  }
-}
-
-function createReadingListLi(entry: ReadingListEntry): HTMLLIElement {
-  const li = document.createElement("li");
-  li.setAttribute("data-testid", "reading-list-item");
-  li.setAttribute("data-url", entry.url);
-  makeReadingListDraggable(li, { url: entry.url, title: entry.title, hasBeenRead: entry.hasBeenRead });
-
-  const link = document.createElement("reading-list-link");
-  link.setAttribute("url", entry.url);
-  link.setAttribute("title", entry.title || entry.url);
-  li.appendChild(link);
-  return li;
+  });
 }
 
 async function loadReadingList() {
@@ -491,32 +142,14 @@ async function loadReadingList() {
   const entries = await api.query({});
   const heading = section.querySelector("h2") as HTMLHeadingElement;
   section.replaceChildren(heading);
-  const unread = entries.filter((e) => !e.hasBeenRead);
-  const read = entries.filter((e) => e.hasBeenRead);
-
-  const unreadDetails = document.createElement("details");
-  unreadDetails.setAttribute("data-testid", "reading-list-unread");
-  trackDetails(unreadDetails, "readingList:unread", true);
-  setupDropTarget(unreadDetails, { type: "reading-list-group", hasBeenRead: false });
-  const unreadSummary = document.createElement("summary");
-  unreadSummary.textContent = "Unread";
-  unreadDetails.appendChild(unreadSummary);
-  const unreadUl = document.createElement("ul");
-  for (const entry of unread) unreadUl.appendChild(createReadingListLi(entry));
-  unreadDetails.appendChild(unreadUl);
-  section.appendChild(unreadDetails);
-
-  const readDetails = document.createElement("details");
-  readDetails.setAttribute("data-testid", "reading-list-read");
-  trackDetails(readDetails, "readingList:read", false);
-  setupDropTarget(readDetails, { type: "reading-list-group", hasBeenRead: true });
-  const readSummary = document.createElement("summary");
-  readSummary.textContent = "Read";
-  readDetails.appendChild(readSummary);
-  const readUl = document.createElement("ul");
-  for (const entry of read) readUl.appendChild(createReadingListLi(entry));
-  readDetails.appendChild(readUl);
-  section.appendChild(readDetails);
+  section.appendChild(renderReadingList(entries, detailsState));
+  section.querySelectorAll<HTMLDetailsElement>("[data-testid='reading-list-unread'], [data-testid='reading-list-read']").forEach((el) => {
+    wireDetailsToggle(el);
+    setupDropTarget(el, {
+      type: "reading-list-group",
+      hasBeenRead: el.getAttribute("data-testid") === "reading-list-read",
+    });
+  });
 }
 
 function onSettingsChanged(newSettings: UserSettings) {
@@ -525,43 +158,19 @@ function onSettingsChanged(newSettings: UserSettings) {
   currentSettings = newSettings;
 }
 
-browser.tabs.onCreated.addListener(() => {
-  void loadTabs();
-});
-browser.tabs.onRemoved.addListener(() => {
-  void loadTabs();
-});
-browser.tabs.onUpdated.addListener(() => {
-  void loadTabs();
-});
-browser.tabs.onMoved.addListener(() => {
-  void loadTabs();
-});
-browser.tabs.onActivated.addListener(() => {
-  void loadTabs();
-});
-browser.tabGroups.onCreated.addListener(() => {
-  void loadTabs();
-});
-browser.tabGroups.onUpdated.addListener(() => {
-  void loadTabs();
-});
-browser.tabGroups.onRemoved.addListener(() => {
-  void loadTabs();
-});
+browser.tabs.onCreated.addListener(() => { void loadTabs(); });
+browser.tabs.onRemoved.addListener(() => { void loadTabs(); });
+browser.tabs.onUpdated.addListener(() => { void loadTabs(); });
+browser.tabs.onMoved.addListener(() => { void loadTabs(); });
+browser.tabs.onActivated.addListener(() => { void loadTabs(); });
+browser.tabGroups.onCreated.addListener(() => { void loadTabs(); });
+browser.tabGroups.onUpdated.addListener(() => { void loadTabs(); });
+browser.tabGroups.onRemoved.addListener(() => { void loadTabs(); });
 
-browser.bookmarks.onCreated.addListener(() => {
-  void loadBookmarks();
-});
-browser.bookmarks.onRemoved.addListener(() => {
-  void loadBookmarks();
-});
-browser.bookmarks.onChanged.addListener(() => {
-  void loadBookmarks();
-});
-browser.bookmarks.onMoved.addListener(() => {
-  void loadBookmarks();
-});
+browser.bookmarks.onCreated.addListener(() => { void loadBookmarks(); });
+browser.bookmarks.onRemoved.addListener(() => { void loadBookmarks(); });
+browser.bookmarks.onChanged.addListener(() => { void loadBookmarks(); });
+browser.bookmarks.onMoved.addListener(() => { void loadBookmarks(); });
 
 const readingListApi = getReadingListApi();
 if (readingListApi) {
