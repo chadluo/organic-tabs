@@ -8,19 +8,42 @@
   --color-surface: Canvas;
   --color-text: CanvasText;
 
-  --color-group-grey: GrayText;
-  --color-group-blue: LinkText;
-  --color-group-red: MarkText;
-  --color-group-yellow: Mark;
-  --color-group-green: AccentColor;
-  --color-group-pink: AccentColor;
-  --color-group-purple: AccentColor;
-  --color-group-cyan: AccentColor;
-  --color-group-orange: AccentColor;
+  --color-group-grey:   oklch(0.50 0.03 264);
+  --color-group-blue:   oklch(0.48 0.20 264);
+  --color-group-red:    oklch(0.52 0.22  25);
+  --color-group-yellow: oklch(0.52 0.16  95);
+  --color-group-green:  oklch(0.50 0.18 145);
+  --color-group-pink:   oklch(0.54 0.20 350);
+  --color-group-purple: oklch(0.48 0.20 300);
+  --color-group-cyan:   oklch(0.50 0.16 195);
+  --color-group-orange: oklch(0.54 0.20  55);
 }
 
 html.dark {
   color-scheme: dark;
+  --color-group-grey:   oklch(0.72 0.03 264);
+  --color-group-blue:   oklch(0.75 0.18 264);
+  --color-group-red:    oklch(0.75 0.18  25);
+  --color-group-yellow: oklch(0.88 0.16  95);
+  --color-group-green:  oklch(0.78 0.18 145);
+  --color-group-pink:   oklch(0.80 0.18 350);
+  --color-group-purple: oklch(0.75 0.18 300);
+  --color-group-cyan:   oklch(0.78 0.15 195);
+  --color-group-orange: oklch(0.82 0.18  55);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) {
+    --color-group-grey:   oklch(0.72 0.03 264);
+    --color-group-blue:   oklch(0.75 0.18 264);
+    --color-group-red:    oklch(0.75 0.18  25);
+    --color-group-yellow: oklch(0.88 0.16  95);
+    --color-group-green:  oklch(0.78 0.18 145);
+    --color-group-pink:   oklch(0.80 0.18 350);
+    --color-group-purple: oklch(0.75 0.18 300);
+    --color-group-cyan:   oklch(0.78 0.15 195);
+    --color-group-orange: oklch(0.82 0.18  55);
+  }
 }
 
 html.light {
