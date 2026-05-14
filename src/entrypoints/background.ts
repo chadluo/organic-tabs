@@ -1,6 +1,5 @@
 import type { BackgroundMessage, BackgroundResponse } from "../utils/messages";
-import { evictPreview, storePreview } from "../utils/preview";
-import { loadSettings, } from "../utils/settings";
+import { loadSettings } from "../utils/settings";
 import { findCyclicTarget, findGeometricTarget, type Direction } from "../utils/shift";
 import {
   sortByLastAccessed,
@@ -8,9 +7,6 @@ import {
   sortByWebsite,
   sortTabsByMode,
 } from "../utils/sort";
-
-/** Per-window debounce: capture fires 3 s after the last activation to skip rapid tab switching. */
-const captureTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
 export default defineBackground(() => {
   browser.commands.onCommand.addListener(async (command) => {
@@ -74,59 +70,12 @@ export default defineBackground(() => {
     },
   );
 
-  browser.tabs.onActivated.addListener((activeInfo) => {
-    const existing = captureTimers.get(activeInfo.windowId);
-    if (existing) {
-      clearTimeout(existing);
-    }
-
-    const timer = setTimeout(() => {
-      captureTimers.delete(activeInfo.windowId);
-      void captureActiveTabPreview(activeInfo.windowId, activeInfo.tabId);
-    }, 3000);
-
-    captureTimers.set(activeInfo.windowId, timer);
-  });
-
-  browser.tabs.onRemoved.addListener(async (tabId) => {
-    try {
-      await evictPreview(tabId);
-    } catch {
-      // Ignore cleanup errors for removed tabs.
-    }
-  });
 });
 
 function isDirection(value: unknown): value is Direction {
   return (
     value === "up" || value === "down" || value === "left" || value === "right"
   );
-}
-
-function shouldSkipPreviewCapture(url: string | undefined): boolean {
-  if (!url) {
-    return true;
-  }
-
-  return url.startsWith("chrome://") || url.startsWith("chrome-extension://");
-}
-
-async function captureActiveTabPreview(windowId: number, tabId: number) {
-  try {
-    const tab = await browser.tabs.get(tabId);
-    if (shouldSkipPreviewCapture(tab.url)) {
-      return;
-    }
-
-    const dataUrl = await browser.tabs.captureVisibleTab(windowId, {
-      format: "jpeg",
-      quality: 40,
-    });
-
-    await storePreview(tabId, dataUrl);
-  } catch {
-    // Tab can close or become non-capturable before the delayed capture runs.
-  }
 }
 
 /**

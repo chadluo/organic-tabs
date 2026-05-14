@@ -10,8 +10,7 @@ Browser extension built with the [WXT framework](https://wxt.dev/) and vanilla T
   drag-and-drop
 - `src/entrypoints/popup/` - Extension popup UI
 - `src/entrypoints/background.ts` - Background service worker
-- `src/utils/` - Shared utilities: catalog (tab data types + fetching), preview (screenshot cache), messaging, settings,
-  tab sort, tab shift
+- `src/utils/` - Shared utilities: catalog (tab data types + fetching), messaging, settings, tab sort, tab shift
 - `public/` - Static assets bundled into the extension
 - `.wxt/` - WXT-generated types and config (do not edit)
 - `.output/` - Build output (do not edit)
@@ -66,5 +65,4 @@ If shell reports command not found, try running with mise, for example `mise exe
 
 <important if="you are working on tab data types, bookmarks, tab groups, or reading list data in the new tab page">
 - Data types and fetching logic live in `src/utils/catalog.ts`
-- Tab screenshot storage is in `src/utils/preview.ts`
 </important>

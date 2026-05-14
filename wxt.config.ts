@@ -20,7 +20,6 @@ export default defineConfig({
       "windows",
     ],
 
-    host_permissions: ["<all_urls>"],
     commands: {
       "sort-tabs": {
         description: "Sort tabs using the default sort order",

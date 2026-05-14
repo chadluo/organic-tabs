@@ -227,23 +227,6 @@ tab-link.duplicate-highlight {
 }
 
 
-.tab-preview {
-  position: fixed;
-  z-index: 9999;
-  width: 320px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 12px 30px color-mix(in srgb, CanvasText 28%, transparent);
-  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-  pointer-events: none;
-}
-
-.tab-preview img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
 @media (max-width: 600px) {
   body {
     padding: 14px;

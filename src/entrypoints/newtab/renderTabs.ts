@@ -1,5 +1,4 @@
 import { type TabCatalog, type CatalogTab } from "../../utils/catalog";
-import { retrievePreview } from "../../utils/preview";
 import { makeTabDraggable, type TabDragData } from "./drag";
 import { setSoftWrappingTitle, populateLink } from "./linkUtils";
 
@@ -26,47 +25,22 @@ class TabLink extends HTMLElement {
     populateLink(content, url, faviconOverride);
     this.appendChild(content);
 
-    this.addEventListener("mouseenter", (event: MouseEvent) => {
-      void this.showPreview(url, tabId, event);
+    this.addEventListener("mouseenter", () => {
+      document
+        .querySelectorAll(`tab-link[url="${CSS.escape(url)}"]`)
+        .forEach((el) => {
+          if (el !== this) el.classList.add("duplicate-highlight");
+        });
     });
 
     this.addEventListener("mouseleave", () => {
       document
         .querySelectorAll(".duplicate-highlight")
         .forEach((el) => el.classList.remove("duplicate-highlight"));
-      document.querySelectorAll(".tab-preview").forEach((el) => el.remove());
     });
   }
 
-  private async showPreview(url: string, tabId: number, event: MouseEvent) {
-    document
-      .querySelectorAll(`tab-link[url="${CSS.escape(url)}"]`)
-      .forEach((el) => {
-        if (el !== this) {
-          el.classList.add("duplicate-highlight");
-        }
-      });
 
-    const dataUrl = await retrievePreview(tabId);
-    if (!dataUrl) {
-      return;
-    }
-
-    const preview = document.createElement("div");
-    preview.className = "tab-preview";
-    const image = document.createElement("img");
-    image.src = dataUrl;
-    preview.appendChild(image);
-    document.body.appendChild(preview);
-
-    const previewWidth = 320;
-    const left =
-      event.clientX + previewWidth + 16 > window.innerWidth
-        ? event.clientX - previewWidth - 8
-        : event.clientX + 12;
-    preview.style.left = `${left}px`;
-    preview.style.top = `${Math.max(8, event.clientY + 12)}px`;
-  }
 }
 
 if (!customElements.get("tab-link")) {
