@@ -11,21 +11,21 @@ Built with WXT + React.
 ## Features
 
 - New tab override (`entrypoints/newtab`) with:
-- Bookmarks tree and open tabs grouped by window/tab group
-- Persisted collapse state
-- Theme selection (system/light/dark)
-- Adjustable bookmark/tab layout columns
-- Tab previews shown on hover (captured in background)
+  - Bookmarks tree and open tabs grouped by window/tab group
+  - Persisted collapse state
+  - Theme selection (system/light/dark)
+  - Adjustable bookmark/tab layout columns
+  - Tab previews shown on hover (captured in background)
 - Popup UI (`entrypoints/popup`) with:
-- Manual sort actions
-- Default sort preference
-- Manual directional tab shifting
+  - Manual sort actions
+  - Default sort preference
+  - Manual directional tab shifting
 - Keyboard shortcuts:
-- `Alt+Shift+S` sort tabs using default sort mode
-- `Alt+Shift+Up` move tab up
-- `Alt+Shift+Down` move tab down
-- `Alt+Shift+Left` move tab left
-- `Alt+Shift+Right` move tab right
+  - `Alt+Shift+S` sort tabs using default sort mode
+  - `Alt+Shift+Up` move tab up
+  - `Alt+Shift+Down` move tab down
+  - `Alt+Shift+Left` move tab left
+  - `Alt+Shift+Right` move tab right
 
 ## Development
 
@@ -43,3 +43,5 @@ pnpm build
 ```
 
 Icon: [Irasutoya](https://www.irasutoya.com/2016/11/blog-post_195.html)
+
+[Source](https://github.com/chadluo/organic-tabs) &middot; [Chrome Web Store](https://chromewebstore.google.com/detail/organic-tabs/bmpakdlejickdodgdkjeplhobgaakogh)
