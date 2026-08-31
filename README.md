@@ -1,5 +1,7 @@
 # Organic Tabs
 
+[Source](https://github.com/chadluo/organic-tabs) &middot; [Chrome Web Store](https://chromewebstore.google.com/detail/organic-tabs/bmpakdlejickdodgdkjeplhobgaakogh)
+
 Single Chrome extension that combines:
 
 - Organic New Tab Page (bookmarks + open tabs dashboard)
@@ -43,5 +45,3 @@ pnpm build
 ```
 
 Icon: [Irasutoya](https://www.irasutoya.com/2016/11/blog-post_195.html)
-
-[Source](https://github.com/chadluo/organic-tabs) &middot; [Chrome Web Store](https://chromewebstore.google.com/detail/organic-tabs/bmpakdlejickdodgdkjeplhobgaakogh)
