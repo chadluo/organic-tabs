@@ -1,6 +1,6 @@
 # Privacy Policy — Organic Tabs
 
-**Effective date:** 2026-05-14
+**Effective date:** 2026-09-30
 
 ## Summary
 
@@ -25,7 +25,15 @@ To display your bookmarks, reading list, and open tabs in a unified new-tab view
 
 ## Settings and UI state
 
-Your preferences (theme, column layout, sort mode) and section collapse/expand state are stored in `chrome.storage.local`. This data never leaves your device and is not synced to your Google account.
+Your preferences (theme, column layout, sort mode, and the on/off switches for the new tab page, tab sorting, and tab shifting) and section collapse/expand state are stored in `chrome.storage.local`. This data never leaves your device and is not synced to your browser account.
+
+Custom new-tab titles that you set for a window are stored in `chrome.storage.session`. The browser deletes this data when it restarts.
+
+---
+
+## Keyboard shortcuts
+
+The extension registers shortcuts to sort tabs and to move the current tab to a neighbouring window. The browser handles the key presses. The extension does not record keystrokes. The popup reads the shortcut list from the browser to display it.
 
 ---
 
