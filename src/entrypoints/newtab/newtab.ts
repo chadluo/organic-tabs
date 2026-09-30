@@ -186,11 +186,10 @@ async function init() {
   }
 
   const ownTab = await browser.tabs.getCurrent();
-  if (ownTab?.id !== undefined) {
-    const ownTabId = ownTab.id;
-    const initialTitle = await loadNtpTitle(ownTabId);
+  if (ownTab?.windowId !== undefined) {
+    const initialTitle = await loadNtpTitle(ownTab.windowId);
     document.title = initialTitle;
-    initTitleEditor(ownTabId, initialTitle);
+    initTitleEditor(ownTab.windowId, initialTitle);
   }
   applyTheme(settings.theme);
   applyLayout(settings);

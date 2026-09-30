@@ -1,6 +1,6 @@
 import { saveNtpTitle } from "../../utils/settings";
 
-export function initTitleEditor(tabId: number, initialTitle: string): void {
+export function initTitleEditor(windowId: number, initialTitle: string): void {
   const input = document.getElementById("ntp-title-input") as HTMLInputElement;
   const saveBtn = document.getElementById("ntp-title-save") as HTMLButtonElement;
   input.value = initialTitle;
@@ -10,7 +10,7 @@ export function initTitleEditor(tabId: number, initialTitle: string): void {
   async function save() {
     savedTitle = input.value;
     document.title = savedTitle;
-    await saveNtpTitle(tabId, savedTitle);
+    await saveNtpTitle(windowId, savedTitle);
     saveBtn.hidden = true;
     saveBtn.textContent = "Saved";
     setTimeout(() => { saveBtn.textContent = "Save"; }, 1500);

@@ -1,6 +1,6 @@
 export type Theme = "system" | "light" | "dark";
 import type { SortMode } from "./sort";
-import { StorageEntry } from "./storage";
+import { StorageEntry, sessionBackend } from "./storage";
 
 export interface UserSettings {
   theme: Theme;
@@ -27,7 +27,8 @@ export const defaultSettings: UserSettings = {
 const NTP_TITLE_DEFAULT = "Organic Tabs";
 
 const settingsEntry = new StorageEntry<UserSettings>(SETTINGS_KEY);
-const ntpTitleEntry = (tabId: number) => new StorageEntry<string>(`ntpTitle-${tabId}`);
+// Session storage: window ids are reused after a browser restart, so titles must not outlive the session.
+const ntpTitleEntry = (windowId: number) => new StorageEntry<string>(`ntpTitle-${windowId}`, sessionBackend);
 
 export async function loadSettings(): Promise<UserSettings> {
   return { ...defaultSettings, ...await settingsEntry.get() };
@@ -37,10 +38,10 @@ export function saveSettings(settings: UserSettings): Promise<void> {
   return settingsEntry.set(settings);
 }
 
-export async function loadNtpTitle(tabId: number): Promise<string> {
-  return (await ntpTitleEntry(tabId).get()) ?? NTP_TITLE_DEFAULT;
+export async function loadNtpTitle(windowId: number): Promise<string> {
+  return (await ntpTitleEntry(windowId).get()) ?? NTP_TITLE_DEFAULT;
 }
 
-export function saveNtpTitle(tabId: number, title: string): Promise<void> {
-  return ntpTitleEntry(tabId).set(title);
+export function saveNtpTitle(windowId: number, title: string): Promise<void> {
+  return ntpTitleEntry(windowId).set(title);
 }

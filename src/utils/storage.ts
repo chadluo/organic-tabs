@@ -18,6 +18,17 @@ const localBackend: StorageBackend = {
   },
 };
 
+/** Same as localBackend, but cleared when the browser restarts. */
+export const sessionBackend: StorageBackend = {
+  async get(key) {
+    const result = await browser.storage.session.get(key);
+    return result[key];
+  },
+  async set(key, value) {
+    await browser.storage.session.set({ [key]: value });
+  },
+};
+
 /**
  * Typed handle for a single storage key. Accepts an optional backend so
  * callers can substitute an in-memory implementation in tests.
