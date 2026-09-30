@@ -17,7 +17,6 @@ Built with WXT + React.
   - Persisted collapse state
   - Theme selection (system/light/dark)
   - Adjustable bookmark/tab layout columns
-  - Tab previews shown on hover (captured in background)
 - Popup UI (`entrypoints/popup`) with:
   - Manual sort actions
   - Default sort preference

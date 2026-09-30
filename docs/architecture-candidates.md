@@ -42,7 +42,7 @@ debouncing. One fix, all 11 listeners benefit.
 
 ## 4 — Unified storage adapter for settings and preview ✅ done (commit: refactor(storage))
 
-**Files:** `src/utils/settings.ts`, `src/utils/preview.ts`
+**Files:** `src/utils/settings.ts`, `src/utils/preview.ts` (`preview.ts` was later removed with the screenshot feature)
 
 Both modules independently implement the same read→merge→write pattern against
 `browser.storage.local`. Neither is testable without browser mocking. `preview.ts` has a latent race
