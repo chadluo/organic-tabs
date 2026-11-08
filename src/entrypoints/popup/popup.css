@@ -58,7 +58,16 @@ h2 {
   gap: 4px;
 }
 
+fieldset.setting-row {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
 .setting-label {
+  padding: 0;
+  margin-bottom: 4px;
   font-size: 12px;
 }
 

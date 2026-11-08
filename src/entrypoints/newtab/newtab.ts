@@ -21,7 +21,6 @@ type DetailsState = Record<string, boolean>;
 
 let detailsState: DetailsState = {};
 let currentSettings: UserSettings = defaultSettings;
-let mediaQuery: MediaQueryList | null = null;
 
 function loadState(): Promise<DetailsState> {
   return browser.storage.local
@@ -43,36 +42,15 @@ function wireDetailsToggle(el: HTMLDetailsElement): void {
   });
 }
 
+/**
+ * Sets the page color scheme. `chrome.storage` stays the source of truth;
+ * `localStorage` keeps a synchronous copy that `theme-boot.js` reads before first paint.
+ */
 function applyTheme(theme: Theme) {
-  const root = document.documentElement;
-
-  if (mediaQuery) {
-    mediaQuery.removeEventListener("change", onSystemThemeChange);
-    mediaQuery = null;
-  }
-
-  root.classList.remove("dark", "light");
-
-  if (theme === "dark") {
-    root.classList.add("dark");
-    return;
-  }
-
-  if (theme === "light") {
-    root.classList.add("light");
-    return;
-  }
-
-  mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  root.classList.toggle("dark", mediaQuery.matches);
-  root.classList.toggle("light", !mediaQuery.matches);
-  mediaQuery.addEventListener("change", onSystemThemeChange);
-}
-
-function onSystemThemeChange(event: MediaQueryListEvent) {
-  const root = document.documentElement;
-  root.classList.toggle("dark", event.matches);
-  root.classList.toggle("light", !event.matches);
+  document.documentElement.style.colorScheme = theme === "system" ? "light dark" : theme;
+  try {
+    localStorage.setItem("theme", theme);
+  } catch {}
 }
 
 function applyLayout(settings: UserSettings) {

@@ -2,6 +2,8 @@ import { defineConfig } from "wxt";
 
 export default defineConfig({
   srcDir: "src",
+  // Keep light-dark() native: the Lightning CSS fallback ignores inline style.colorScheme.
+  vite: () => ({ build: { cssTarget: ["chrome123", "firefox120"] } }),
   manifest: {
     name: "Organic Tabs",
     description: "Unified new tab page, tab sorter, and tab shifter extension.",

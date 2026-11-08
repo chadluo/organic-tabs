@@ -156,8 +156,11 @@ test("drag to read group: accept confirm → entry added as read", async ({
   await ntp.openBookmarkFolder(folderId);
   await ntp.readingListRead().locator("summary").click();
 
-  ntpPage.once("dialog", (dialog) => dialog.accept());
   await ntp.dragTo(ntp.bookmarkItem(bookmarkUrl), ntp.readingListRead());
+  await ntpPage.getByRole("dialog").getByRole("button", { name: "OK" }).click();
+  await expect(
+    ntp.readingListRead().locator(`reading-list-link[url="${bookmarkUrl}"]`),
+  ).toBeVisible();
 
   const entries = await ntpPage.evaluate(async (u) => {
     const api = (globalThis as any).chrome?.readingList;
@@ -165,10 +168,6 @@ test("drag to read group: accept confirm → entry added as read", async ({
   }, bookmarkUrl);
   expect(entries).toHaveLength(1);
   expect(entries[0].hasBeenRead).toBe(true);
-
-  await expect(
-    ntp.readingListRead().locator(`reading-list-link[url="${bookmarkUrl}"]`),
-  ).toBeVisible();
 
   // Cleanup
   await ntpPage.evaluate(
@@ -204,8 +203,11 @@ test("drag to read group: dismiss confirm → no entry added", async ({
   await ntp.openBookmarkFolder(folderId);
   await ntp.readingListRead().locator("summary").click();
 
-  ntpPage.once("dialog", (dialog) => dialog.dismiss());
   await ntp.dragTo(ntp.bookmarkItem(bookmarkUrl), ntp.readingListRead());
+  const dialog = ntpPage.getByRole("dialog");
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
 
   const entries = await ntpPage.evaluate(async (u) => {
     const api = (globalThis as any).chrome?.readingList;
