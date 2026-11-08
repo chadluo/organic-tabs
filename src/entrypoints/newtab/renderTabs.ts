@@ -15,7 +15,10 @@ class TabLink extends HTMLElement {
     const anchor = content.querySelector(".link") as HTMLAnchorElement;
 
     setSoftWrappingTitle(anchor, this.getAttribute("title") || "Untitled");
+    if (url) anchor.href = url;
     anchor.addEventListener("click", (event) => {
+      // Modified clicks keep the browser default (open the URL in a new tab or window).
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       void browser.tabs.update(tabId, { active: true });
       void browser.windows.update(windowId, { focused: true });
@@ -87,7 +90,7 @@ export function renderTabs(
 ): DocumentFragment {
   const fragment = document.createDocumentFragment();
 
-  for (const windowRef of catalog.windows) {
+  for (const [index, windowRef] of catalog.windows.entries()) {
     const windowKey = `window:${windowRef.id}`;
     const details = document.createElement("details");
     details.setAttribute("data-testid", "tab-window");
@@ -111,10 +114,11 @@ export function renderTabs(
     summary.appendChild(labelSpan);
 
     const sortBtn = document.createElement("button");
+    sortBtn.type = "button";
     sortBtn.className = "sort-btn";
     sortBtn.textContent = "⇅";
     sortBtn.setAttribute("data-window-id", String(windowRef.id));
-    summary.appendChild(sortBtn);
+    sortBtn.setAttribute("aria-label", `Sort tabs in window ${index + 1}: ${windowLabel}`);
 
     details.appendChild(summary);
 
@@ -161,7 +165,12 @@ export function renderTabs(
     }
 
     details.appendChild(ul);
-    fragment.appendChild(details);
+    // The sort button stays outside <details>: inside <summary> it is interactive
+    // content with unreliable semantics, and after <summary> it hides when closed.
+    const windowRow = document.createElement("div");
+    windowRow.className = "tab-window";
+    windowRow.append(details, sortBtn);
+    fragment.appendChild(windowRow);
   }
 
   return fragment;

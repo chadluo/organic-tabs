@@ -22,14 +22,14 @@
         </label>
       </div>
       <div class="sub-settings" id="newtab-sub">
-        <div class="setting-row">
-          <span class="setting-label">Theme</span>
+        <fieldset class="setting-row">
+          <legend class="setting-label">Theme</legend>
           <div class="radio-row radio-inline">
             <label><input type="radio" name="theme" value="system" />System</label>
             <label><input type="radio" name="theme" value="light" />Light</label>
             <label><input type="radio" name="theme" value="dark" />Dark</label>
           </div>
-        </div>
+        </fieldset>
         <div class="setting-row">
           <label class="slider-row">
             <span>Bookmarks and Lists columns</span>
@@ -58,20 +58,20 @@
         </label>
       </div>
       <div class="sub-settings" id="sort-sub">
-        <div class="setting-row">
-          <span class="setting-label">Default sort</span>
+        <fieldset class="setting-row">
+          <legend class="setting-label">Default sort</legend>
           <div class="radio-row radio-inline">
             <label><input type="radio" name="default-sort" value="title" />Title</label>
             <label><input type="radio" name="default-sort" value="website" />Website</label>
             <label><input type="radio" name="default-sort" value="lastAccessed" />Last Accessed</label>
           </div>
-        </div>
+        </fieldset>
         <div class="button-grid">
           <button type="button" id="sort-title">Sort by Title</button>
           <button type="button" id="sort-website">Sort by Website</button>
           <button type="button" id="sort-last-accessed">Sort by Last Accessed</button>
         </div>
-        <p id="sort-status" class="status" hidden></p>
+        <p id="sort-status" class="status" role="status" hidden></p>
         <p class="shortcut" id="sort-shortcut">Alt+Shift+S: Sort using default order</p>
       </div>
     </section>
@@ -93,7 +93,7 @@
           <button type="button" id="shift-up"><span>Up</span><span class="btn-shortcut" id="shift-up-shortcut"></span></button>
           <button type="button" id="shift-right"><span>Right</span><span class="btn-shortcut" id="shift-right-shortcut"></span></button>
         </div>
-        <p id="shift-status" class="status" hidden></p>
+        <p id="shift-status" class="status" role="status" hidden></p>
       </div>
     </section>
   </div>

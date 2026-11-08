@@ -14,12 +14,16 @@ export interface SortableTab {
 /**
  * Three-pass move plan produced by `computeSortMoves` and consumed by `sortTabs`.
  * Passes are applied in order (pinned → groups → ungrouped) to avoid index
- * conflicts as tabs shift positions.
+ * conflicts as tabs shift positions. Pinned and ungrouped tabs each move in one
+ * batched `tabs.move` call, as a contiguous run in array order: pinned from
+ * index 0, ungrouped from `ungroupedIndex`. All arrays are empty when the
+ * window is already in sorted order.
  */
 export interface SortPlan {
-  pinnedMoves: { tabId: number; index: number }[];
+  pinnedTabIds: number[];
   groupMoves: { groupId: number; index: number }[];
-  ungroupedMoves: { tabId: number; index: number }[];
+  ungroupedTabIds: number[];
+  ungroupedIndex: number;
 }
 
 const GENERIC_SLDS = new Set([
@@ -46,28 +50,56 @@ export function naturalCompare(a: string, b: string): number {
 }
 
 /**
- * Produces a path-like sort key that groups tabs by domain. Handles
+ * Sort key for a URL as levels: `[[protocol], [domain], subdomains, pathSegments]`.
+ * Subdomains run from the domain outward (`a.b.x.com` → `["b", "a"]`).
+ * Levels stay separate so a subdomain never compares against a path segment.
+ * Unparsable URLs fall back to `[[url]]`.
+ */
+export type UrlSortKey = string[][];
+
+/**
+ * Builds a `UrlSortKey` that groups tabs by registrable domain. Handles
  * country-code second-level domains (e.g. co.uk, com.au) as a single unit
  * so "bbc.co.uk" sorts alongside other BBC pages rather than generic ".uk" sites.
  */
-export function getUrlSortKey(url: string): string {
+export function getUrlSortKey(url: string): UrlSortKey {
   try {
     const urlObj = new URL(url);
     const protocol = urlObj.protocol.replace(":", "");
     const parts = urlObj.hostname.split(".").reverse();
-    const path = urlObj.pathname;
 
     const isCountryTld =
       parts.length >= 3 && parts[0].length === 2 && GENERIC_SLDS.has(parts[1]);
     const domainPartCount = isCountryTld ? 3 : Math.min(2, parts.length);
 
     const domain = parts.slice(0, domainPartCount).reverse().join(".");
-    const subdomains = parts.slice(domainPartCount).join("/");
+    const subdomains = parts.slice(domainPartCount);
+    const pathSegments = urlObj.pathname.split("/").filter(Boolean);
 
-    return `/${protocol}/${domain}${subdomains ? `/${subdomains}` : ""}${path}`;
+    return [[protocol], [domain], subdomains, pathSegments];
   } catch {
-    return url;
+    return [[url]];
   }
+}
+
+/** Element-wise compare; the first difference decides, and a prefix sorts first. */
+function compareLists<T>(a: T[], b: T[], compare: (x: T, y: T) => number): number {
+  const length = Math.min(a.length, b.length);
+  for (let i = 0; i < length; i += 1) {
+    const result = compare(a[i]!, b[i]!);
+    if (result !== 0) {
+      return result;
+    }
+  }
+  return a.length - b.length;
+}
+
+/**
+ * Orders `UrlSortKey`s level by level with `naturalCompare` per segment, so
+ * `x.com` (no subdomains) sorts before every `*.x.com`.
+ */
+export function compareUrlSortKeys(a: UrlSortKey, b: UrlSortKey): number {
+  return compareLists(a, b, (x, y) => compareLists(x, y, naturalCompare));
 }
 
 /**
@@ -120,14 +152,6 @@ export function computeSortMoves(
   pinnedTabs.sort(compareFn);
   sortUnits.sort((a, b) => compareFn(a.key, b.key));
 
-  const pinnedMoves: { tabId: number; index: number }[] = [];
-  for (let i = 0; i < pinnedTabs.length; i += 1) {
-    const tabId = pinnedTabs[i].id;
-    if (tabId !== undefined) {
-      pinnedMoves.push({ tabId, index: i });
-    }
-  }
-
   const groupMoves: { groupId: number; index: number }[] = [];
   let groupTargetIndex = pinnedTabs.length;
   for (const groupId of groupIds) {
@@ -137,19 +161,23 @@ export function computeSortMoves(
     }
   }
 
-  const ungroupedMoves: { tabId: number; index: number }[] = [];
-  let targetIndex = groupTargetIndex;
-  for (const unit of sortUnits) {
-    for (const tab of unit.members) {
-      const tabId = tab.id;
-      if (tabId !== undefined) {
-        ungroupedMoves.push({ tabId, index: targetIndex });
-        targetIndex += 1;
-      }
-    }
+  const ids = (list: SortableTab[]) =>
+    list.flatMap((tab) => (tab.id === undefined ? [] : [tab.id]));
+  const pinnedTabIds = ids(pinnedTabs);
+  const ungroupedTabIds = ids(sortUnits.flatMap((unit) => unit.members));
+
+  // Skip every move when the final order already matches the current order.
+  const currentIds = ids([...tabs].sort((a, b) => (a.index ?? 0) - (b.index ?? 0)));
+  const finalIds = [
+    ...pinnedTabIds,
+    ...groupIds.flatMap((groupId) => ids(groupedTabs.filter((tab) => tab.groupId === groupId))),
+    ...ungroupedTabIds,
+  ];
+  if (finalIds.every((id, i) => id === currentIds[i])) {
+    return { pinnedTabIds: [], groupMoves: [], ungroupedTabIds: [], ungroupedIndex: groupTargetIndex };
   }
 
-  return { pinnedMoves, groupMoves, ungroupedMoves };
+  return { pinnedTabIds, groupMoves, ungroupedTabIds, ungroupedIndex: groupTargetIndex };
 }
 
 export async function sortTabsByMode(mode: SortMode, windowId?: number) {
@@ -175,21 +203,22 @@ export async function sortByLastAccessed(windowId?: number) {
 }
 
 export async function sortByWebsite(windowId?: number) {
-  const sortKeyCache = new Map<string, string>();
+  const sortKeyCache = new Map<string, UrlSortKey>();
 
   const getCachedSortKey = (url: string | undefined) => {
     const key = url ?? "";
-    if (!sortKeyCache.has(key)) {
-      sortKeyCache.set(key, getUrlSortKey(key));
+    let sortKey = sortKeyCache.get(key);
+    if (!sortKey) {
+      sortKey = getUrlSortKey(key);
+      sortKeyCache.set(key, sortKey);
     }
-    return sortKeyCache.get(key) ?? key;
+    return sortKey;
   };
 
-  await sortTabs((a, b) => {
-    const keyA = getCachedSortKey(a.url);
-    const keyB = getCachedSortKey(b.url);
-    return naturalCompare(keyA, keyB);
-  }, windowId);
+  await sortTabs(
+    (a, b) => compareUrlSortKeys(getCachedSortKey(a.url), getCachedSortKey(b.url)),
+    windowId,
+  );
 }
 
 export async function sortTabs(
@@ -201,13 +230,13 @@ export async function sortTabs(
   const tabs = await browser.tabs.query(queryOptions);
   const plan = computeSortMoves(tabs, compareFn);
 
-  for (const { tabId, index } of plan.pinnedMoves) {
-    await browser.tabs.move(tabId, { index });
+  if (plan.pinnedTabIds.length > 0) {
+    await browser.tabs.move(plan.pinnedTabIds, { index: 0 });
   }
   for (const { groupId, index } of plan.groupMoves) {
     await browser.tabGroups.move(groupId, { index });
   }
-  for (const { tabId, index } of plan.ungroupedMoves) {
-    await browser.tabs.move(tabId, { index });
+  if (plan.ungroupedTabIds.length > 0) {
+    await browser.tabs.move(plan.ungroupedTabIds, { index: plan.ungroupedIndex });
   }
 }

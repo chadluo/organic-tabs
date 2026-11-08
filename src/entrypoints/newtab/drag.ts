@@ -126,21 +126,44 @@ async function openNewTab(
   }
 }
 
+/**
+ * Shows the shared modal `<dialog>` and resolves `true` only when the user picks OK.
+ * Esc closes it with `returnValue` "" (cancel). Without Cancel it acts as an alert.
+ */
+function showDialog(message: string, withCancel: boolean): Promise<boolean> {
+  const dialog = document.getElementById("confirm-dialog") as HTMLDialogElement;
+  const cancel = document.getElementById("confirm-dialog-cancel") as HTMLButtonElement;
+  const ok = document.getElementById("confirm-dialog-ok") as HTMLButtonElement;
+  (document.getElementById("confirm-dialog-message") as HTMLElement).textContent = message;
+  cancel.hidden = !withCancel;
+  ok.autofocus = !withCancel;
+  return new Promise((resolve) => {
+    dialog.addEventListener(
+      "close",
+      () => {
+        resolve(dialog.returnValue === "ok");
+        dialog.returnValue = "";
+      },
+      { once: true },
+    );
+    dialog.showModal();
+  });
+}
+
+function confirmAddAsRead(title: string): Promise<boolean> {
+  return showDialog(`Are you sure you want to add "${title}" to the Reading List as Read?`, true);
+}
+
 async function addToReadingList(
   url: string,
   title: string,
   hasBeenRead: boolean,
 ): Promise<void> {
   if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
-    window.alert(`"${title || url}" cannot be added to the Reading List.`);
+    await showDialog(`"${title || url}" cannot be added to the Reading List.`, false);
     return;
   }
-  if (
-    hasBeenRead &&
-    !window.confirm(
-      `Are you sure you want to add "${title || url}" to the Reading List as Read?`,
-    )
-  ) {
+  if (hasBeenRead && !(await confirmAddAsRead(title || url))) {
     return;
   }
   void getReadingListApi()?.addEntry({ url, title, hasBeenRead });
@@ -198,11 +221,13 @@ function executeDrop(dt: DataTransfer, config: DropTargetConfig): void {
     if (dragType === "reading-list") {
       const data = JSON.parse(dt.getData(RL_MIME)) as ReadingListDragData;
       if (data.hasBeenRead === config.hasBeenRead) return;
-      if (
-        config.hasBeenRead &&
-        !window.confirm(`Are you sure you want to add "${data.title || data.url}" to the Reading List as Read?`)
-      ) return;
-      void getReadingListApi()?.updateEntry({ url: data.url, hasBeenRead: config.hasBeenRead });
+      if (!config.hasBeenRead) {
+        void getReadingListApi()?.updateEntry({ url: data.url, hasBeenRead: false });
+        return;
+      }
+      void confirmAddAsRead(data.title || data.url).then((ok) => {
+        if (ok) void getReadingListApi()?.updateEntry({ url: data.url, hasBeenRead: true });
+      });
     } else if (dragType === "tab") {
       const data = JSON.parse(dt.getData(TAB_MIME)) as TabDragData;
       void addToReadingList(data.url, data.title, config.hasBeenRead);

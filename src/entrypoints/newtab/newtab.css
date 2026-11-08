@@ -8,46 +8,15 @@
   --color-surface: Canvas;
   --color-text: CanvasText;
 
-  --color-group-grey:   oklch(0.50 0.03 264);
-  --color-group-blue:   oklch(0.48 0.20 264);
-  --color-group-red:    oklch(0.52 0.22  25);
-  --color-group-yellow: oklch(0.52 0.16  95);
-  --color-group-green:  oklch(0.50 0.18 145);
-  --color-group-pink:   oklch(0.54 0.20 350);
-  --color-group-purple: oklch(0.48 0.20 300);
-  --color-group-cyan:   oklch(0.50 0.16 195);
-  --color-group-orange: oklch(0.54 0.20  55);
-}
-
-html.dark {
-  color-scheme: dark;
-  --color-group-grey:   oklch(0.72 0.03 264);
-  --color-group-blue:   oklch(0.75 0.18 264);
-  --color-group-red:    oklch(0.75 0.18  25);
-  --color-group-yellow: oklch(0.88 0.16  95);
-  --color-group-green:  oklch(0.78 0.18 145);
-  --color-group-pink:   oklch(0.80 0.18 350);
-  --color-group-purple: oklch(0.75 0.18 300);
-  --color-group-cyan:   oklch(0.78 0.15 195);
-  --color-group-orange: oklch(0.82 0.18  55);
-}
-
-@media (prefers-color-scheme: dark) {
-  html:not(.light) {
-    --color-group-grey:   oklch(0.72 0.03 264);
-    --color-group-blue:   oklch(0.75 0.18 264);
-    --color-group-red:    oklch(0.75 0.18  25);
-    --color-group-yellow: oklch(0.88 0.16  95);
-    --color-group-green:  oklch(0.78 0.18 145);
-    --color-group-pink:   oklch(0.80 0.18 350);
-    --color-group-purple: oklch(0.75 0.18 300);
-    --color-group-cyan:   oklch(0.78 0.15 195);
-    --color-group-orange: oklch(0.82 0.18  55);
-  }
-}
-
-html.light {
-  color-scheme: light;
+  --color-group-grey:   light-dark(oklch(0.50 0.03 264), oklch(0.72 0.03 264));
+  --color-group-blue:   light-dark(oklch(0.48 0.20 264), oklch(0.75 0.18 264));
+  --color-group-red:    light-dark(oklch(0.52 0.22  25), oklch(0.75 0.18  25));
+  --color-group-yellow: light-dark(oklch(0.52 0.16  95), oklch(0.88 0.16  95));
+  --color-group-green:  light-dark(oklch(0.50 0.18 145), oklch(0.78 0.18 145));
+  --color-group-pink:   light-dark(oklch(0.54 0.20 350), oklch(0.80 0.18 350));
+  --color-group-purple: light-dark(oklch(0.48 0.20 300), oklch(0.75 0.18 300));
+  --color-group-cyan:   light-dark(oklch(0.50 0.16 195), oklch(0.78 0.15 195));
+  --color-group-orange: light-dark(oklch(0.54 0.20  55), oklch(0.82 0.18  55));
 }
 
 * {
@@ -138,13 +107,25 @@ details>summary.current-window {
   font-weight: 800;
 }
 
+.tab-window {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  break-inside: avoid;
+}
+
+.tab-window>details {
+  flex: 1;
+  min-width: 0;
+}
+
 .sort-btn {
   flex-shrink: 0;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.25rem 0.35rem;
-  margin: -0.25rem -0.35rem -0.25rem 0;
+  margin: -0.25rem 0;
   color: var(--color-hostname);
   font-size: 0.9em;
   line-height: 1;
@@ -249,6 +230,14 @@ tab-link.duplicate-highlight {
   color: var(--color-group-orange);
 }
 
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
 
 @media (max-width: 600px) {
   body {

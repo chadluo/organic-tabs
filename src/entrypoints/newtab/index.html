@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Organic Tabs</title>
+  <script src="/theme-boot.js"></script>
   <link rel="stylesheet" href="./newtab.css" />
 </head>
 
@@ -16,7 +17,7 @@
 
   <template id="tab-link-template">
     <img class="favicon" alt="" />
-    <span class="text-wrap"><a class="link" href="#"></a> <span class="hostname"></span></span>
+    <span class="text-wrap"><a class="link"></a> <span class="hostname"></span></span>
   </template>
 
   <template id="reading-list-link-template">
@@ -44,6 +45,14 @@
       </section>
     </div>
   </main>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-dialog-message">
+    <p id="confirm-dialog-message"></p>
+    <form method="dialog">
+      <button value="cancel" id="confirm-dialog-cancel" autofocus>Cancel</button>
+      <button value="ok" id="confirm-dialog-ok">OK</button>
+    </form>
+  </dialog>
 
   <script type="module" src="./newtab.ts"></script>
 </body>
