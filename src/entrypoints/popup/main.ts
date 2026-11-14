@@ -11,11 +11,9 @@ async function updateSettings(patch: Partial<UserSettings>) {
   await saveSettings(settings);
 }
 
+/** Status regions stay in the DOM so screen readers announce text changes. */
 function setStatus(el: HTMLElement, text: string) {
   el.textContent = text;
-  el.className =
-    "status " + (text.startsWith("Error") ? "status-error" : "status-info");
-  el.hidden = !text;
 }
 
 function applySettings(s: UserSettings) {
