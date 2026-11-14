@@ -1,6 +1,6 @@
 import { type BookmarkNode } from "../../utils/catalog";
 import { makeBookmarkDraggable } from "./drag";
-import { setSoftWrappingTitle, populateLink } from "./linkUtils";
+import { setSoftWrappingTitle, populateLink, emptyState } from "./linkUtils";
 
 class BookmarkLink extends HTMLElement {
   connectedCallback() {
@@ -80,5 +80,6 @@ export function renderBookmarks(
     const rendered = renderNode(folder);
     if (rendered) fragment.appendChild(rendered);
   }
+  if (!fragment.hasChildNodes()) fragment.appendChild(emptyState("No bookmarks yet."));
   return fragment;
 }

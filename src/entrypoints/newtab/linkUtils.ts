@@ -38,3 +38,11 @@ export function populateLink(
     setSoftWrappingTitle(anchor, url);
   }
 }
+
+/** A muted one-line note shown in place of an empty list. */
+export function emptyState(text: string): HTMLParagraphElement {
+  const p = document.createElement("p");
+  p.className = "empty";
+  p.textContent = text;
+  return p;
+}

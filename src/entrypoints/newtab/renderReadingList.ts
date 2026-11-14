@@ -1,5 +1,5 @@
 import { type ReadingListEntry, makeReadingListDraggable } from "./drag";
-import { setSoftWrappingTitle, populateLink } from "./linkUtils";
+import { setSoftWrappingTitle, populateLink, emptyState } from "./linkUtils";
 
 class ReadingListLink extends HTMLElement {
   connectedCallback() {
@@ -56,6 +56,7 @@ export function renderReadingList(
   const unreadUl = document.createElement("ul");
   for (const entry of unread) unreadUl.appendChild(createEntryLi(entry));
   unreadDetails.appendChild(unreadUl);
+  if (!unread.length) unreadDetails.appendChild(emptyState("Nothing unread."));
 
   const readDetails = document.createElement("details");
   readDetails.setAttribute("data-testid", "reading-list-read");
@@ -67,6 +68,7 @@ export function renderReadingList(
   const readUl = document.createElement("ul");
   for (const entry of read) readUl.appendChild(createEntryLi(entry));
   readDetails.appendChild(readUl);
+  if (!read.length) readDetails.appendChild(emptyState("Nothing read yet."));
 
   const fragment = document.createDocumentFragment();
   fragment.appendChild(unreadDetails);
