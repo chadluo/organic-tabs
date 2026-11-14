@@ -90,8 +90,9 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     } else {
       const input = document.createElement("input");
       input.value = value;
-      input.placeholder = "home, i/history, or / for the root page";
+      input.placeholder = "docs/api";
       input.setAttribute("aria-label", "Path");
+      input.setAttribute("aria-describedby", "rules-hint");
       input.addEventListener("input", validate);
       middle = input;
     }
@@ -137,9 +138,6 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     validate();
   });
   $("rules-cancel").addEventListener("click", () => dialog.close());
-  dialog.addEventListener("click", (e) => {
-    if (e.target === dialog) dialog.close();
-  });
 
   const save = async (andSort: boolean) => {
     if (problem()) return;
