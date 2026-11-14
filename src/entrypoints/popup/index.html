@@ -15,9 +15,9 @@
 
     <section class="section">
       <div class="section-header">
-        <h2>New Tab Page</h2>
+        <h2>New tab page</h2>
         <label class="toggle-label">
-          <input type="checkbox" id="newtab-enabled" />
+          <input type="checkbox" id="newtab-enabled" aria-label="Enabled: New tab page" />
           Enabled
         </label>
       </div>
@@ -32,7 +32,7 @@
         </fieldset>
         <div class="setting-row">
           <label class="slider-row">
-            <span>Bookmarks and Lists columns</span>
+            <span>Bookmarks and lists columns</span>
             <input type="range" id="bookmarks-and-lists-columns" min="1" max="2" />
             <span class="slider-value" id="bookmarks-and-lists-columns-value">1</span>
           </label>
@@ -51,9 +51,9 @@
 
     <section class="section">
       <div class="section-header">
-        <h2>Tab Sort</h2>
+        <h2>Tab sort</h2>
         <label class="toggle-label">
-          <input type="checkbox" id="sort-enabled" />
+          <input type="checkbox" id="sort-enabled" aria-label="Enabled: Tab sort" />
           Enabled
         </label>
       </div>
@@ -63,13 +63,13 @@
           <div class="radio-row radio-inline">
             <label><input type="radio" name="default-sort" value="title" />Title</label>
             <label><input type="radio" name="default-sort" value="website" />Website</label>
-            <label><input type="radio" name="default-sort" value="lastAccessed" />Last Accessed</label>
+            <label><input type="radio" name="default-sort" value="lastAccessed" />Last accessed</label>
           </div>
         </fieldset>
         <div class="button-grid">
-          <button type="button" id="sort-title">Sort by Title</button>
-          <button type="button" id="sort-website">Sort by Website</button>
-          <button type="button" id="sort-last-accessed">Sort by Last Accessed</button>
+          <button type="button" id="sort-title">Sort by title</button>
+          <button type="button" id="sort-website">Sort by website</button>
+          <button type="button" id="sort-last-accessed">Sort by last accessed</button>
         </div>
         <button type="button" id="rules-open" hidden></button>
         <p id="sort-status" class="status" role="status"></p>
@@ -81,19 +81,22 @@
 
     <section class="section">
       <div class="section-header">
-        <h2>Tab Shift</h2>
+        <h2>Tab shift</h2>
         <label class="toggle-label">
-          <input type="checkbox" id="shift-enabled" />
+          <input type="checkbox" id="shift-enabled" aria-label="Enabled: Tab shift" />
           Enabled
         </label>
       </div>
       <div class="sub-settings" id="shift-sub">
-        <div class="button-grid direction-grid">
-          <button type="button" id="shift-left"><span>Left</span><span class="btn-shortcut" id="shift-left-shortcut"></span></button>
-          <button type="button" id="shift-down"><span>Down</span><span class="btn-shortcut" id="shift-down-shortcut"></span></button>
-          <button type="button" id="shift-up"><span>Up</span><span class="btn-shortcut" id="shift-up-shortcut"></span></button>
-          <button type="button" id="shift-right"><span>Right</span><span class="btn-shortcut" id="shift-right-shortcut"></span></button>
-        </div>
+        <fieldset class="setting-row">
+          <legend class="setting-label">Move current tab to window</legend>
+          <div class="button-grid direction-grid">
+            <button type="button" id="shift-left"><span>Left</span><span class="btn-shortcut" id="shift-left-shortcut"></span></button>
+            <button type="button" id="shift-down"><span>Down</span><span class="btn-shortcut" id="shift-down-shortcut"></span></button>
+            <button type="button" id="shift-up"><span>Up</span><span class="btn-shortcut" id="shift-up-shortcut"></span></button>
+            <button type="button" id="shift-right"><span>Right</span><span class="btn-shortcut" id="shift-right-shortcut"></span></button>
+          </div>
+        </fieldset>
         <p id="shift-status" class="status" role="status"></p>
       </div>
     </section>
