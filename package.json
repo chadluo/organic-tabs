@@ -2,7 +2,7 @@
   "name": "organic-tabs",
   "description": "Unified organic tab toolkit: new tab page, tab sorter, and tab shifter",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "wxt",

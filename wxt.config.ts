@@ -11,7 +11,7 @@ export default defineConfig({
       '48': 'icon/48.png',
       '128': 'icon/128.png'
     },
-    version: "1.0.2",
+    version: "1.0.3",
     permissions: [
       "bookmarks",
       "favicon",
