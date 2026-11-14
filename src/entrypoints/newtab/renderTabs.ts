@@ -99,9 +99,8 @@ export function renderTabs(
     details.open = detailsState[windowKey] ?? true;
 
     const activeTab = windowRef.tabs.find((tab) => tab.active);
-    const windowLabel = activeTab
-      ? `${activeTab.title} (${windowRef.tabs.length} tabs)`
-      : `Window (${windowRef.tabs.length} tabs)`;
+    const count = `${windowRef.tabs.length} ${windowRef.tabs.length === 1 ? "tab" : "tabs"}`;
+    const windowLabel = activeTab ? `${activeTab.title} (${count})` : `Window (${count})`;
 
     const summary = document.createElement("summary");
     summary.classList.add("window-summary");

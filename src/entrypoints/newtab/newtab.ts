@@ -96,7 +96,8 @@ async function loadTabs() {
     });
   });
   section.querySelectorAll<HTMLButtonElement>(".sort-btn").forEach((btn) => {
-    btn.title = `Sort tabs by ${currentSettings.defaultSortMode}`;
+    const mode = currentSettings.defaultSortMode;
+    btn.title = `Sort tabs by ${mode === "lastAccessed" ? "last accessed" : mode}`;
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
