@@ -220,6 +220,12 @@ button {
   opacity: 0.4;
 }
 
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: GrayText;
+}
+
 .rules-actions {
   display: flex;
   gap: 6px;
