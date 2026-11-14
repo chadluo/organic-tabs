@@ -53,7 +53,7 @@ export function naturalCompare(a: string, b: string): number {
 
 /**
  * Sort key for a URL as levels: `[[protocol], [domain], subdomains, pathSegments]`.
- * Subdomains run from the domain outward (`a.b.x.com` → `["b", "a"]`).
+ * Subdomains run from the domain outward (`a.b.example.com` → `["b", "a"]`).
  * Levels stay separate so a subdomain never compares against a path segment.
  * Unparsable URLs fall back to `[[url]]`.
  * `rules` (keyed by exact hostname) reorders the path level, see `applyRules`.
@@ -62,7 +62,7 @@ export type UrlSortKey = string[][];
 
 /**
  * User-defined path order per exact hostname. Each list holds normalized path
- * rules (`"home"`, `"i/history"`, or `"/"` for the root page) in sort order,
+ * rules (`"docs"`, `"docs/api"`, or `"/"` for the root page) in sort order,
  * plus one `OTHERS` marker where all unmatched paths go.
  */
 export type HostRules = Record<string, string[]>;
@@ -155,7 +155,7 @@ function compareLists<T>(a: T[], b: T[], compare: (x: T, y: T) => number): numbe
 
 /**
  * Orders `UrlSortKey`s level by level with `naturalCompare` per segment, so
- * `x.com` (no subdomains) sorts before every `*.x.com`.
+ * `example.com` (no subdomains) sorts before every `*.example.com`.
  */
 export function compareUrlSortKeys(a: UrlSortKey, b: UrlSortKey): number {
   return compareLists(a, b, (x, y) => compareLists(x, y, naturalCompare));

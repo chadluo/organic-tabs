@@ -90,7 +90,7 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     } else {
       const input = document.createElement("input");
       input.value = value;
-      input.placeholder = "i/history";
+      input.placeholder = "docs/api";
       input.setAttribute("aria-label", "Path");
       input.setAttribute("aria-describedby", "rules-hint");
       input.addEventListener("input", validate);
