@@ -172,7 +172,8 @@ tab-link {
 
 .text-wrap {
   min-width: 0;
-  line-height: 1.15rem;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
 
 .link {
