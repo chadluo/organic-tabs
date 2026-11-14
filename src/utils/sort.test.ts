@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { compareUrlSortKeys, getUrlSortKey } from "./sort";
+import { compareUrlSortKeys, getUrlSortKey, normalizeRule, OTHERS } from "./sort";
 
-const sortUrls = (urls: string[]) =>
-  [...urls].sort((a, b) => compareUrlSortKeys(getUrlSortKey(a), getUrlSortKey(b)));
+const sortUrls = (urls: string[], rules = {}) =>
+  [...urls].sort((a, b) => compareUrlSortKeys(getUrlSortKey(a, rules), getUrlSortKey(b, rules)));
 
 describe("website sort", () => {
   it("keeps the bare domain together before its subdomains", () => {
@@ -35,5 +35,45 @@ describe("website sort", () => {
       "https://eu.blog.x.com/",
       "https://cdn.x.com/",
     ]);
+  });
+});
+
+describe("host sorting rules", () => {
+  const rules = { "x.com": ["/", "home", "i/history", OTHERS, "settings"] };
+
+  it("orders rules first, Others alphabetical, trailing rules last; root is a rule too", () => {
+    expect(
+      sortUrls(
+        [
+          "https://x.com/settings",
+          "https://x.com/spottedinprod",
+          "https://x.com/i/history/2",
+          "https://x.com/homepage",
+          "https://x.com/i/bookmarks",
+          "https://x.com/home",
+          "https://x.com/addyosmani",
+          "https://x.com/",
+          "https://y.com/home",
+        ],
+        rules,
+      ),
+    ).toEqual([
+      "https://x.com/",
+      "https://x.com/home",
+      "https://x.com/i/history/2",
+      "https://x.com/addyosmani",
+      "https://x.com/homepage",
+      "https://x.com/i/bookmarks",
+      "https://x.com/spottedinprod",
+      "https://x.com/settings",
+      "https://y.com/home",
+    ]);
+  });
+
+  it("normalizes input to whole path segments", () => {
+    expect(normalizeRule(" /i/history/?a=1#b ")).toBe("i/history");
+    expect(normalizeRule("https://x.com/home")).toBe("home");
+    expect(normalizeRule("/")).toBe("/");
+    expect(normalizeRule("  ")).toBe(OTHERS);
   });
 });

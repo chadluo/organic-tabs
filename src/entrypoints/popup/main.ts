@@ -1,5 +1,6 @@
 import { sendToBackground, sortModeToAction } from "../../utils/messages";
 import { defaultSettings, loadSettings, saveSettings, type Theme, type UserSettings } from "../../utils/settings";
+import { initRulesDialog } from "./rules";
 import type { Direction } from "../../utils/shift";
 import type { SortMode } from "../../utils/sort";
 
@@ -139,6 +140,8 @@ async function init() {
       setStatus(sortStatus, "Error: failed to sort tabs.");
     }
   }
+
+  void initRulesDialog(() => runSort("website"));
 
   document
     .getElementById("sort-title")!

@@ -1,5 +1,5 @@
 export type Theme = "system" | "light" | "dark";
-import type { SortMode } from "./sort";
+import { OTHERS, type HostRules, type SortMode } from "./sort";
 import { StorageEntry, sessionBackend } from "./storage";
 
 export interface UserSettings {
@@ -44,4 +44,18 @@ export async function loadNtpTitle(windowId: number): Promise<string> {
 
 export function saveNtpTitle(windowId: number, title: string): Promise<void> {
   return ntpTitleEntry(windowId).set(title);
+}
+
+const sortRulesEntry = new StorageEntry<HostRules>("sortRules");
+
+export async function loadSortRules(): Promise<HostRules> {
+  return (await sortRulesEntry.get()) ?? {};
+}
+
+/** Saves one host's rules. A list with only the `OTHERS` marker equals no rules, so the host entry is removed. */
+export async function saveHostRules(host: string, list: string[]): Promise<void> {
+  const rules = { ...(await loadSortRules()) };
+  if (list.some((rule) => rule !== OTHERS)) rules[host] = list;
+  else delete rules[host];
+  await sortRulesEntry.set(rules);
 }

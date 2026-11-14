@@ -71,6 +71,7 @@
           <button type="button" id="sort-website">Sort by Website</button>
           <button type="button" id="sort-last-accessed">Sort by Last Accessed</button>
         </div>
+        <button type="button" id="rules-open" hidden></button>
         <p id="sort-status" class="status" role="status" hidden></p>
         <p class="shortcut" id="sort-shortcut">Alt+Shift+S: Sort using default order</p>
       </div>
@@ -97,6 +98,22 @@
       </div>
     </section>
   </div>
+  <dialog id="rules-dialog" aria-labelledby="rules-title">
+    <div class="rules-body">
+      <h3 id="rules-title"></h3>
+      <ul id="rules-list"></ul>
+      <div class="rules-actions rules-add-row">
+        <button type="button" id="rules-add">+ Add path</button>
+        <button type="button" id="rules-add-current">+ Add current path</button>
+      </div>
+      <p id="rules-error" class="status" role="alert" hidden></p>
+      <div class="rules-actions">
+        <button type="button" id="rules-cancel">Cancel</button>
+        <button type="button" id="rules-save-sort">Save and sort</button>
+        <button type="button" id="rules-save" class="primary">Save</button>
+      </div>
+    </div>
+  </dialog>
   <script type="module" src="./main.ts"></script>
 </body>
 

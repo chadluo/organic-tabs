@@ -150,3 +150,91 @@ button {
   font-size: 10px;
   font-weight: 400;
 }
+
+#rules-dialog {
+  width: 330px;
+  padding: 0;
+  color: inherit;
+  background: Canvas;
+}
+
+.rules-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  font-family: "SF Pro Text", "Segoe UI", sans-serif;
+}
+
+#rules-title {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+#rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rule-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px;
+}
+
+.rule-others {
+  flex: 1;
+  padding: 5px;
+  font-size: 13px;
+  font-style: italic;
+  border: 1px dashed GrayText;
+}
+
+.rule-row .handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.rule-row button {
+  padding: 4px 6px;
+  font-weight: 400;
+}
+
+.rule-row.dragging {
+  opacity: 0.4;
+}
+
+.rules-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.rules-actions .primary {
+  font-weight: 700;
+}
+
+#rules-error {
+  color: #b00020;
+}
+
+@media (prefers-color-scheme: dark) {
+  #rules-error {
+    color: #ff8a80;
+  }
+}
+
+.rules-add-row {
+  justify-content: flex-start;
+}

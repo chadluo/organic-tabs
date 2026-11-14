@@ -1,3 +1,5 @@
+import { loadSortRules } from "./settings";
+
 export type SortMode = "title" | "website" | "lastAccessed";
 
 export interface SortableTab {
@@ -54,15 +56,70 @@ export function naturalCompare(a: string, b: string): number {
  * Subdomains run from the domain outward (`a.b.x.com` → `["b", "a"]`).
  * Levels stay separate so a subdomain never compares against a path segment.
  * Unparsable URLs fall back to `[[url]]`.
+ * `rules` (keyed by exact hostname) reorders the path level, see `applyRules`.
  */
 export type UrlSortKey = string[][];
+
+/**
+ * User-defined path order per exact hostname. Each list holds normalized path
+ * rules (`"home"`, `"i/history"`, or `"/"` for the root page) in sort order,
+ * plus one `OTHERS` marker where all unmatched paths go.
+ */
+export type HostRules = Record<string, string[]>;
+
+/** Marker inside a rule list for "every path no rule matches". Never a valid rule. */
+export const OTHERS = "";
+
+/**
+ * Turns user input (path, or pasted URL) into a stored rule: whole path
+ * segments joined by `/`, no query or hash, `"/"` for the root page, `""` when blank.
+ * Goes through `URL` so encoding matches `pathname` of real tabs.
+ */
+export function normalizeRule(input: string): string {
+  const text = input.trim();
+  if (!text) return OTHERS;
+  try {
+    const url = /^[a-z][a-z0-9+.-]*:\/\//i.test(text)
+      ? new URL(text)
+      : new URL(text.replace(/^\/*/, "/"), "http://h");
+    return url.pathname.split("/").filter(Boolean).join("/") || "/";
+  } catch {
+    return OTHERS;
+  }
+}
+
+/**
+ * Prepends the rule rank to the path segments so rules override alphabetical
+ * order. The longest rule whose whole segments lead the path wins and its
+ * segments are consumed; `"/"` matches only an empty path. No match → `OTHERS` rank.
+ * Rank is zero-padded so `naturalCompare` orders it numerically.
+ */
+function applyRules(segments: string[], rules: string[]): string[] {
+  let best = -1;
+  let bestLength = -1;
+  rules.forEach((rule, i) => {
+    if (rule === OTHERS) return;
+    const ruleSegments = rule === "/" ? [] : rule.split("/");
+    const matches =
+      rule === "/"
+        ? segments.length === 0
+        : ruleSegments.every((segment, j) => segments[j] === segment);
+    if (matches && ruleSegments.length > bestLength) {
+      best = i;
+      bestLength = ruleSegments.length;
+    }
+  });
+  const rank = best >= 0 ? best : rules.indexOf(OTHERS);
+  const rest = best >= 0 ? segments.slice(bestLength) : segments;
+  return [String(rank < 0 ? rules.length : rank).padStart(4, "0"), ...rest];
+}
 
 /**
  * Builds a `UrlSortKey` that groups tabs by registrable domain. Handles
  * country-code second-level domains (e.g. co.uk, com.au) as a single unit
  * so "bbc.co.uk" sorts alongside other BBC pages rather than generic ".uk" sites.
  */
-export function getUrlSortKey(url: string): UrlSortKey {
+export function getUrlSortKey(url: string, rules: HostRules = {}): UrlSortKey {
   try {
     const urlObj = new URL(url);
     const protocol = urlObj.protocol.replace(":", "");
@@ -74,7 +131,9 @@ export function getUrlSortKey(url: string): UrlSortKey {
 
     const domain = parts.slice(0, domainPartCount).reverse().join(".");
     const subdomains = parts.slice(domainPartCount);
-    const pathSegments = urlObj.pathname.split("/").filter(Boolean);
+    let pathSegments = urlObj.pathname.split("/").filter(Boolean);
+    const hostRules = Object.hasOwn(rules, urlObj.hostname) ? rules[urlObj.hostname] : undefined;
+    if (hostRules) pathSegments = applyRules(pathSegments, hostRules);
 
     return [[protocol], [domain], subdomains, pathSegments];
   } catch {
@@ -203,13 +262,14 @@ export async function sortByLastAccessed(windowId?: number) {
 }
 
 export async function sortByWebsite(windowId?: number) {
+  const rules = await loadSortRules();
   const sortKeyCache = new Map<string, UrlSortKey>();
 
   const getCachedSortKey = (url: string | undefined) => {
     const key = url ?? "";
     let sortKey = sortKeyCache.get(key);
     if (!sortKey) {
-      sortKey = getUrlSortKey(key);
+      sortKey = getUrlSortKey(key, rules);
       sortKeyCache.set(key, sortKey);
     }
     return sortKey;
