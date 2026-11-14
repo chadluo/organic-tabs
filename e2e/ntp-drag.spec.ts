@@ -157,7 +157,7 @@ test("drag to read group: accept confirm → entry added as read", async ({
   await ntp.readingListRead().locator("summary").click();
 
   await ntp.dragTo(ntp.bookmarkItem(bookmarkUrl), ntp.readingListRead());
-  await ntpPage.getByRole("dialog").getByRole("button", { name: "OK" }).click();
+  await ntpPage.getByRole("dialog").getByRole("button", { name: "Add as read" }).click();
   await expect(
     ntp.readingListRead().locator(`reading-list-link[url="${bookmarkUrl}"]`),
   ).toBeVisible();

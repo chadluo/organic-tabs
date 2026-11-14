@@ -127,14 +127,15 @@ async function openNewTab(
 }
 
 /**
- * Shows the shared modal `<dialog>` and resolves `true` only when the user picks OK.
+ * Shows the shared modal `<dialog>` and resolves `true` only when the user picks the confirm button.
  * Esc closes it with `returnValue` "" (cancel). Without Cancel it acts as an alert.
  */
-function showDialog(message: string, withCancel: boolean): Promise<boolean> {
+function showDialog(message: string, okLabel: string, withCancel: boolean): Promise<boolean> {
   const dialog = document.getElementById("confirm-dialog") as HTMLDialogElement;
   const cancel = document.getElementById("confirm-dialog-cancel") as HTMLButtonElement;
   const ok = document.getElementById("confirm-dialog-ok") as HTMLButtonElement;
   (document.getElementById("confirm-dialog-message") as HTMLElement).textContent = message;
+  ok.textContent = okLabel;
   cancel.hidden = !withCancel;
   ok.autofocus = !withCancel;
   return new Promise((resolve) => {
@@ -151,7 +152,7 @@ function showDialog(message: string, withCancel: boolean): Promise<boolean> {
 }
 
 function confirmAddAsRead(title: string): Promise<boolean> {
-  return showDialog(`Are you sure you want to add "${title}" to the Reading List as Read?`, true);
+  return showDialog(`Add "${title}" to Reading List as read?`, "Add as read", true);
 }
 
 async function addToReadingList(
@@ -160,7 +161,7 @@ async function addToReadingList(
   hasBeenRead: boolean,
 ): Promise<void> {
   if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
-    await showDialog(`"${title || url}" cannot be added to the Reading List.`, false);
+    await showDialog(`"${title || url}" cannot be added. Reading List accepts only web pages.`, "Close", false);
     return;
   }
   if (hasBeenRead && !(await confirmAddAsRead(title || url))) {
