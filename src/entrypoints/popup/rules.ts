@@ -51,7 +51,6 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
   function validate() {
     const text = problem();
     error.textContent = text;
-    error.hidden = !text;
     saveButtons.forEach((b) => (b.disabled = !!text));
   }
 

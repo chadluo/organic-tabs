@@ -128,9 +128,14 @@ button {
 
 .status {
   margin: 0;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 8px 0;
   font-size: 12px;
+}
+
+/* Empty live regions stay mounted; cancel the flex gaps they would add. */
+.status:empty {
+  padding: 0;
+  margin-block: -4px;
 }
 
 .shortcut {
