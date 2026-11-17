@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { compareUrlSortKeys, getUrlSortKey, normalizeRule, OTHERS } from "./sort";
+import {
+  APEX,
+  compareUrlSortKeys,
+  getUrlSortKey,
+  normalizeRule,
+  normalizeSubdomain,
+  OTHERS,
+} from "./sort";
 
 const sortUrls = (urls: string[], rules = {}) =>
   [...urls].sort((a, b) => compareUrlSortKeys(getUrlSortKey(a, rules), getUrlSortKey(b, rules)));
@@ -68,6 +75,37 @@ describe("host sorting rules", () => {
       "https://x.com/settings",
       "https://y.com/home",
     ]);
+  });
+
+  it("orders subdomains by rule, with prefix match, the bare domain, and Others in place", () => {
+    const domainRules = { "x.com": ["www", OTHERS, APEX, "space"] };
+    const urls = [
+      "https://a.space.x.com/",
+      "https://x.com/",
+      "https://cdn.x.com/",
+      "https://www.x.com/",
+      "https://blog.x.com/",
+      "https://space.x.com/",
+    ];
+    expect(
+      [...urls].sort((a, b) =>
+        compareUrlSortKeys(getUrlSortKey(a, {}, domainRules), getUrlSortKey(b, {}, domainRules)),
+      ),
+    ).toEqual([
+      "https://www.x.com/",
+      "https://blog.x.com/",
+      "https://cdn.x.com/",
+      "https://x.com/",
+      "https://space.x.com/",
+      "https://a.space.x.com/",
+    ]);
+  });
+
+  it("normalizes subdomain input and rejects other domains", () => {
+    expect(normalizeSubdomain("WWW", "bilibili.com")).toBe("www");
+    expect(normalizeSubdomain("https://a.space.bilibili.com/video", "bilibili.com")).toBe("a.space");
+    expect(normalizeSubdomain("www.google.com", "bilibili.com")).toBeNull();
+    expect(normalizeSubdomain("bilibili.com", "bilibili.com")).toBeNull();
   });
 
   it("normalizes input to whole path segments", () => {

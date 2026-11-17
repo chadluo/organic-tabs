@@ -1,67 +1,67 @@
-import { loadSortRules, saveHostRules } from "../../utils/settings";
-import { OTHERS, normalizeRule } from "../../utils/sort";
+import { loadSortRules, loadSubdomainRules, saveDomainRules, saveHostRules } from "../../utils/settings";
+import { APEX, OTHERS, normalizeRule, normalizeSubdomain, splitHost } from "../../utils/sort";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 /**
- * Wires the "Customized sorting rules" button and dialog for the active tab's
- * hostname. Row order in `#rules-list` is the rule order; the `Others` row
- * (no input) marks where unmatched paths go. Saving is blocked while any row
- * is blank or duplicated; rows are never fixed silently.
+ * One reorderable rule list in the dialog. Row order in `list` is the rule
+ * order. Fixed rows (no input: Others, and the bare-domain row for subdomains)
+ * carry their stored marker in `data-value` and can move but not be deleted.
  */
-export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  let url: URL;
-  try {
-    url = new URL(tab?.url ?? "");
-  } catch {
-    return;
-  }
-  if (!/^https?:$/.test(url.protocol)) return;
-  const host = url.hostname;
+interface RuleSection {
+  /** Row values in order: the fixed marker, or `normalize(input)` (blank → `OTHERS`, invalid → `null`). */
+  values: () => (string | null)[];
+  /** First problem with the rows, prefixed with the section name, or "". */
+  problem: () => string;
+  /** Replaces all rows with `rules`; values that are keys of `fixed` become fixed rows with that label. */
+  reset: (rules: string[]) => void;
+  /** Appends an input row and returns it. */
+  addRow: (value: string) => HTMLLIElement;
+}
 
-  const dialog = $<HTMLDialogElement>("rules-dialog");
-  const list = $<HTMLUListElement>("rules-list");
-  const error = $<HTMLElement>("rules-error");
-  const saveButtons = [$("rules-save"), $("rules-save-sort")] as HTMLButtonElement[];
-  const open = $<HTMLButtonElement>("rules-open");
-  open.textContent = `Customized sorting rules for ${host}`;
-  open.hidden = false;
-  $("rules-title").textContent = `Sorting rules for ${host}`;
-
-  /** Row values in order; `OTHERS` for the Others row, normalized text otherwise (blank → `OTHERS`). */
+function ruleSection(
+  list: HTMLUListElement,
+  opts: {
+    name: string;
+    inputLabel: string;
+    placeholder: string;
+    hintId: string;
+    fixed: Record<string, string>;
+    normalize: (input: string) => string | null;
+    invalid: string;
+    onChange: () => void;
+  },
+): RuleSection {
   const values = () =>
     [...list.children].map((li) => {
       const input = li.querySelector("input");
-      return input ? normalizeRule(input.value) : OTHERS;
+      return input ? opts.normalize(input.value) : (li as HTMLElement).dataset.value!;
     });
 
-  /** Returns the first problem with the rows, or "". */
   function problem(): string {
     const rows = [...list.children];
     const vals = values();
+    let text = "";
     if (rows.some((li, i) => li.querySelector("input") && vals[i] === OTHERS)) {
-      return "Fill in or delete the empty rows.";
+      text = "Fill in or delete the empty rows.";
+    } else if (vals.includes(null)) {
+      text = opts.invalid;
+    } else {
+      const named = vals.filter((v) => !(v! in opts.fixed));
+      const dup = named.find((v, i) => named.indexOf(v) !== i);
+      if (dup) text = `Duplicate: ${dup}`;
     }
-    const named = vals.filter((v) => v !== OTHERS);
-    const dup = named.find((v, i) => named.indexOf(v) !== i);
-    return dup ? `Duplicate path: ${dup}` : "";
-  }
-
-  function validate() {
-    const text = problem();
-    error.textContent = text;
-    saveButtons.forEach((b) => (b.disabled = !!text));
+    return text && `${opts.name}: ${text}`;
   }
 
   const swap = (li: Element, other: Element | null, after: boolean) => {
     if (!other) return;
     if (after) other.after(li);
     else other.before(li);
-    validate();
+    opts.onChange();
   };
 
-  function addRow(value: string | null) {
+  function addRow(value: string, fixedLabel?: string) {
     const li = document.createElement("li");
     li.className = "rule-row";
     const handle = document.createElement("span");
@@ -83,17 +83,18 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     });
 
     let middle: HTMLElement;
-    if (value === null) {
+    if (fixedLabel !== undefined) {
+      li.dataset.value = value;
       middle = document.createElement("span");
       middle.className = "rule-others";
-      middle.textContent = "Others";
+      middle.textContent = fixedLabel;
     } else {
       const input = document.createElement("input");
       input.value = value;
-      input.placeholder = "docs/api";
-      input.setAttribute("aria-label", "Path");
-      input.setAttribute("aria-describedby", "rules-hint");
-      input.addEventListener("input", validate);
+      input.placeholder = opts.placeholder;
+      input.setAttribute("aria-label", opts.inputLabel);
+      input.setAttribute("aria-describedby", opts.hintId);
+      input.addEventListener("input", opts.onChange);
       middle = input;
     }
 
@@ -111,37 +112,111 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
       button("↑", "Move up", () => swap(li, li.previousElementSibling, false)),
       button("↓", "Move down", () => swap(li, li.nextElementSibling, true)),
     );
-    if (value !== null) {
-      li.append(button("✕", "Delete", () => { li.remove(); validate(); }));
+    if (fixedLabel === undefined) {
+      li.append(button("✕", "Delete", () => { li.remove(); opts.onChange(); }));
     }
     list.append(li);
     return li;
   }
 
+  return {
+    values,
+    problem,
+    reset(rules) {
+      list.replaceChildren();
+      for (const rule of rules) addRow(rule, opts.fixed[rule]);
+    },
+    addRow: (value) => addRow(value),
+  };
+}
+
+/**
+ * Wires the "Customized sorting rules" button and dialog for the active tab.
+ * The dialog has a subdomain section for the registrable domain (hidden for IP
+ * addresses and single-label hosts) and a path section for the exact hostname.
+ * One Save writes both. Saving is blocked while any row is blank, invalid, or
+ * duplicated; rows are never fixed silently.
+ */
+export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  let url: URL;
+  try {
+    url = new URL(tab?.url ?? "");
+  } catch {
+    return;
+  }
+  if (!/^https?:$/.test(url.protocol)) return;
+  const host = url.hostname;
+  const { domain, subdomains } = splitHost(host);
+  const hasSubdomains = host.includes(".") && !/^[\d.]+$|^\[/.test(host);
+
+  const dialog = $<HTMLDialogElement>("rules-dialog");
+  const error = $<HTMLElement>("rules-error");
+  const saveButtons = [$("rules-save"), $("rules-save-sort")] as HTMLButtonElement[];
+  const open = $<HTMLButtonElement>("rules-open");
+  open.textContent = `Customized sorting rules for ${host}`;
+  open.hidden = false;
+  $("rules-title").textContent = `Sorting rules for ${host}`;
+  $("subdomain-title").textContent = `Subdomain order for ${domain}`;
+  $("rules-path-title").textContent = `Path order for ${host}`;
+  $("subdomain-section").hidden = !hasSubdomains;
+  const currentSubdomain = [...subdomains].reverse().join(".");
+  $("subdomain-add-current").hidden = !currentSubdomain;
+
+  function validate() {
+    const text = (hasSubdomains && subdomainSection.problem()) || pathSection.problem();
+    error.textContent = text;
+    saveButtons.forEach((b) => (b.disabled = !!text));
+  }
+
+  const subdomainSection = ruleSection($("subdomain-list"), {
+    name: "Subdomains",
+    inputLabel: "Subdomain",
+    placeholder: "www",
+    hintId: "subdomain-hint",
+    fixed: { [APEX]: `${domain} (no subdomain)`, [OTHERS]: "Others" },
+    normalize: (input) => normalizeSubdomain(input, domain),
+    invalid: `Not a subdomain of ${domain}`,
+    onChange: validate,
+  });
+  const pathSection = ruleSection($("rules-list"), {
+    name: "Paths",
+    inputLabel: "Path",
+    placeholder: "docs/api",
+    hintId: "rules-hint",
+    fixed: { [OTHERS]: "Others" },
+    normalize: normalizeRule,
+    invalid: "",
+    onChange: validate,
+  });
+
   open.addEventListener("click", async () => {
-    const saved = (await loadSortRules())[host];
-    list.replaceChildren();
-    // No saved rules: start from the current page's path, then Others.
-    for (const rule of saved ?? [normalizeRule(url.pathname), OTHERS]) {
-      addRow(rule === OTHERS ? null : rule);
-    }
+    const [pathRules, domainRules] = await Promise.all([loadSortRules(), loadSubdomainRules()]);
+    // No saved rules: bare domain then Others (today's order); current path then Others.
+    subdomainSection.reset(domainRules[domain] ?? [APEX, OTHERS]);
+    pathSection.reset(pathRules[host] ?? [normalizeRule(url.pathname), OTHERS]);
     validate();
     dialog.showModal();
   });
 
-  $("rules-add").addEventListener("click", () => {
-    addRow("").querySelector("input")!.focus();
+  const add = (section: RuleSection, value: string) => {
+    const input = section.addRow(value).querySelector("input")!;
+    if (!value) input.focus();
     validate();
-  });
-  $("rules-add-current").addEventListener("click", () => {
-    addRow(normalizeRule(url.pathname));
-    validate();
-  });
+  };
+  $("subdomain-add").addEventListener("click", () => add(subdomainSection, ""));
+  $("subdomain-add-current").addEventListener("click", () => add(subdomainSection, currentSubdomain));
+  $("rules-add").addEventListener("click", () => add(pathSection, ""));
+  $("rules-add-current").addEventListener("click", () => add(pathSection, normalizeRule(url.pathname)));
   $("rules-cancel").addEventListener("click", () => dialog.close());
 
   const save = async (andSort: boolean) => {
-    if (problem()) return;
-    await saveHostRules(host, values());
+    validate();
+    if (error.textContent) return;
+    await Promise.all([
+      hasSubdomains && saveDomainRules(domain, subdomainSection.values() as string[]),
+      saveHostRules(host, pathSection.values() as string[]),
+    ]);
     dialog.close();
     if (andSort) await sortByWebsite();
   };

@@ -10,7 +10,10 @@ body {
 }
 
 .popup-root {
-  width: 360px;
+  box-sizing: border-box;
+  /* 420px content + 2 × 14px padding; shrinks in narrow hosts such as the Firefox overflow menu. */
+  inline-size: 448px;
+  max-inline-size: 100%;
   padding: 14px;
   font-family: "SF Pro Text", "Segoe UI", sans-serif;
 }
@@ -102,7 +105,7 @@ fieldset.setting-row {
 }
 
 button {
-  padding: 9px 10px;
+  padding: 6px 8px;
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -157,13 +160,22 @@ button {
 }
 
 #rules-dialog {
-  width: 330px;
+  box-sizing: border-box;
+  inline-size: calc(100% - 16px);
+  max-block-size: calc(100% - 16px);
   padding: 0;
   color: inherit;
   background: Canvas;
 }
 
+/* The sections scroll; the title and the action row stay visible. */
+#rules-dialog[open] {
+  display: flex;
+}
+
 .rules-body {
+  flex: 1;
+  min-block-size: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -171,13 +183,32 @@ button {
   font-family: "SF Pro Text", "Segoe UI", sans-serif;
 }
 
-#rules-title {
+.rules-sections {
+  min-block-size: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rules-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#rules-title,
+.rules-section h4 {
   margin: 0;
   font-size: 0.875rem;
   overflow-wrap: anywhere;
 }
 
-#rules-list {
+.rules-section h4 {
+  font-size: 0.8125rem;
+}
+
+.rules-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -212,6 +243,7 @@ button {
 }
 
 .rule-row button {
+  min-inline-size: 24px;
   padding: 4px 6px;
   font-weight: 400;
 }
