@@ -102,16 +102,17 @@ export function splitHost(hostname: string): { domain: string; subdomains: strin
  * subdomain rule for `domain`: the labels before the domain (`"a.b"`).
  * Returns `OTHERS` when blank and `null` when the input is not a subdomain of
  * `domain` (other domain, the bare domain, or not a valid hostname).
- * Dotted input that ends in the domain's top-level label is read as a hostname.
+ * Only a single label is relative; any input with a dot or slash is read as a
+ * hostname or URL, so `www.google.org` is rejected rather than stored as labels.
+ * Multi-level subdomains are therefore typed in full (`a.b.example.com`).
  */
 export function normalizeSubdomain(input: string, domain: string): string | null {
   const text = input.trim().toLowerCase();
   if (!text) return OTHERS;
-  const tld = domain.slice(domain.lastIndexOf(".") + 1);
   const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//.test(text);
-  const isHost = hasScheme || text.includes("/") || text === tld || text.endsWith(`.${tld}`);
+  const isLabel = !/[./]/.test(text);
   try {
-    const { hostname } = new URL(hasScheme ? text : `http://${isHost ? text : `${text}.${domain}`}`);
+    const { hostname } = new URL(hasScheme ? text : `http://${isLabel ? `${text}.${domain}` : text}`);
     return hostname.endsWith(`.${domain}`) ? hostname.slice(0, -domain.length - 1) : null;
   } catch {
     return null;

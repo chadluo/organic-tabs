@@ -104,7 +104,10 @@ describe("host sorting rules", () => {
   it("normalizes subdomain input and rejects other domains", () => {
     expect(normalizeSubdomain("WWW", "bilibili.com")).toBe("www");
     expect(normalizeSubdomain("https://a.space.bilibili.com/video", "bilibili.com")).toBe("a.space");
+    expect(normalizeSubdomain("a.space.bilibili.com", "bilibili.com")).toBe("a.space");
     expect(normalizeSubdomain("www.google.com", "bilibili.com")).toBeNull();
+    expect(normalizeSubdomain("www.google.org", "bilibili.com")).toBeNull();
+    expect(normalizeSubdomain("www.google.co.uk", "bilibili.com")).toBeNull();
     expect(normalizeSubdomain("bilibili.com", "bilibili.com")).toBeNull();
   });
 

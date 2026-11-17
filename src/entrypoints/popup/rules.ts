@@ -13,7 +13,7 @@ interface RuleSection {
   values: () => (string | null)[];
   /** First problem with the rows, prefixed with the section name, or "". */
   problem: () => string;
-  /** Replaces all rows with `rules`; values that are keys of `fixed` become fixed rows with that label. */
+  /** Replaces all rows with `rules`; values in `fixed` become fixed rows with that label, others show `display(value)`. */
   reset: (rules: string[]) => void;
   /** Appends an input row and returns it. */
   addRow: (value: string) => HTMLLIElement;
@@ -26,7 +26,9 @@ function ruleSection(
     inputLabel: string;
     placeholder: string;
     hintId: string;
-    fixed: Record<string, string>;
+    fixed: Map<string, string>;
+    /** Input text for a stored rule; `normalize(display(rule))` must return `rule`. */
+    display: (rule: string) => string;
     normalize: (input: string) => string | null;
     invalid: string;
     onChange: () => void;
@@ -47,7 +49,7 @@ function ruleSection(
     } else if (vals.includes(null)) {
       text = opts.invalid;
     } else {
-      const named = vals.filter((v) => !(v! in opts.fixed));
+      const named = vals.filter((_, i) => rows[i]!.querySelector("input"));
       const dup = named.find((v, i) => named.indexOf(v) !== i);
       if (dup) text = `Duplicate: ${dup}`;
     }
@@ -124,7 +126,10 @@ function ruleSection(
     problem,
     reset(rules) {
       list.replaceChildren();
-      for (const rule of rules) addRow(rule, opts.fixed[rule]);
+      for (const rule of rules) {
+        const label = opts.fixed.get(rule);
+        addRow(label === undefined ? opts.display(rule) : rule, label);
+      }
     },
     addRow: (value) => addRow(value),
   };
@@ -160,8 +165,7 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
   $("subdomain-title").textContent = `Subdomain order for ${domain}`;
   $("rules-path-title").textContent = `Path order for ${host}`;
   $("subdomain-section").hidden = !hasSubdomains;
-  const currentSubdomain = [...subdomains].reverse().join(".");
-  $("subdomain-add-current").hidden = !currentSubdomain;
+  $("subdomain-add-current").hidden = subdomains.length === 0;
 
   function validate() {
     const text = (hasSubdomains && subdomainSection.problem()) || pathSection.problem();
@@ -174,7 +178,8 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     inputLabel: "Subdomain",
     placeholder: "www",
     hintId: "subdomain-hint",
-    fixed: { [APEX]: `${domain} (no subdomain)`, [OTHERS]: "Others" },
+    fixed: new Map([[APEX, `${domain} (no subdomain)`], [OTHERS, "Others"]]),
+    display: (rule) => `${rule}.${domain}`,
     normalize: (input) => normalizeSubdomain(input, domain),
     invalid: `Not a subdomain of ${domain}`,
     onChange: validate,
@@ -184,7 +189,8 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     inputLabel: "Path",
     placeholder: "docs/api",
     hintId: "rules-hint",
-    fixed: { [OTHERS]: "Others" },
+    fixed: new Map([[OTHERS, "Others"]]),
+    display: (rule) => rule,
     normalize: normalizeRule,
     invalid: "",
     onChange: validate,
@@ -205,7 +211,7 @@ export async function initRulesDialog(sortByWebsite: () => Promise<void>) {
     validate();
   };
   $("subdomain-add").addEventListener("click", () => add(subdomainSection, ""));
-  $("subdomain-add-current").addEventListener("click", () => add(subdomainSection, currentSubdomain));
+  $("subdomain-add-current").addEventListener("click", () => add(subdomainSection, host));
   $("rules-add").addEventListener("click", () => add(pathSection, ""));
   $("rules-add-current").addEventListener("click", () => add(pathSection, normalizeRule(url.pathname)));
   $("rules-cancel").addEventListener("click", () => dialog.close());
