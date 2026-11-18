@@ -1,4 +1,4 @@
-import { loadSortRules } from "./settings";
+import { loadSortRules, loadSubdomainRules } from "./settings";
 
 export type SortMode = "title" | "website" | "lastAccessed";
 
@@ -71,6 +71,55 @@ export type HostRules = Record<string, string[]>;
 export const OTHERS = "";
 
 /**
+ * User-defined subdomain order per registrable domain (see `splitHost`). Each
+ * list holds subdomain labels as written in the hostname (`"www"`, `"a.b"` for
+ * `a.b.<domain>`), one `APEX` marker for the bare domain, and one `OTHERS` marker.
+ * A rule also matches deeper subdomains: `"space"` matches `a.space.<domain>`.
+ */
+export type DomainRules = Record<string, string[]>;
+
+/** Marker inside a subdomain rule list for the bare domain. Reuses the root-page match of `applyRules`. */
+export const APEX = "/";
+
+/**
+ * Splits a hostname into its registrable domain and its subdomain labels,
+ * ordered from the domain outward (`a.b.example.com` → `["b", "a"]`).
+ * Country-code second-level domains (co.uk, com.au) count as part of the domain.
+ */
+export function splitHost(hostname: string): { domain: string; subdomains: string[] } {
+  const parts = hostname.split(".").reverse();
+  const isCountryTld =
+    parts.length >= 3 && parts[0].length === 2 && GENERIC_SLDS.has(parts[1]);
+  const domainPartCount = isCountryTld ? 3 : Math.min(2, parts.length);
+  return {
+    domain: parts.slice(0, domainPartCount).reverse().join("."),
+    subdomains: parts.slice(domainPartCount),
+  };
+}
+
+/**
+ * Turns user input (`"www"`, `"www.example.com"`, or a URL) into a stored
+ * subdomain rule for `domain`: the labels before the domain (`"a.b"`).
+ * Returns `OTHERS` when blank and `null` when the input is not a subdomain of
+ * `domain` (other domain, the bare domain, or not a valid hostname).
+ * Only a single label is relative; any input with a dot or slash is read as a
+ * hostname or URL, so `www.google.org` is rejected rather than stored as labels.
+ * Multi-level subdomains are therefore typed in full (`a.b.example.com`).
+ */
+export function normalizeSubdomain(input: string, domain: string): string | null {
+  const text = input.trim().toLowerCase();
+  if (!text) return OTHERS;
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//.test(text);
+  const isLabel = !/[./]/.test(text);
+  try {
+    const { hostname } = new URL(hasScheme ? text : `http://${isLabel ? `${text}.${domain}` : text}`);
+    return hostname.endsWith(`.${domain}`) ? hostname.slice(0, -domain.length - 1) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Turns user input (path, or pasted URL) into a stored rule: whole path
  * segments joined by `/`, no query or hash, `"/"` for the root page, `""` when blank.
  * Goes through `URL` so encoding matches `pathname` of real tabs.
@@ -115,22 +164,24 @@ function applyRules(segments: string[], rules: string[]): string[] {
 }
 
 /**
- * Builds a `UrlSortKey` that groups tabs by registrable domain. Handles
- * country-code second-level domains (e.g. co.uk, com.au) as a single unit
+ * Builds a `UrlSortKey` that groups tabs by registrable domain (`splitHost`),
  * so "bbc.co.uk" sorts alongside other BBC pages rather than generic ".uk" sites.
+ * `domainRules` reorders the subdomain level the same way `rules` reorders paths:
+ * rule labels are reversed into `applyRules` segments, and `APEX` matches no subdomain.
  */
-export function getUrlSortKey(url: string, rules: HostRules = {}): UrlSortKey {
+export function getUrlSortKey(
+  url: string,
+  rules: HostRules = {},
+  domainRules: DomainRules = {},
+): UrlSortKey {
   try {
     const urlObj = new URL(url);
     const protocol = urlObj.protocol.replace(":", "");
-    const parts = urlObj.hostname.split(".").reverse();
-
-    const isCountryTld =
-      parts.length >= 3 && parts[0].length === 2 && GENERIC_SLDS.has(parts[1]);
-    const domainPartCount = isCountryTld ? 3 : Math.min(2, parts.length);
-
-    const domain = parts.slice(0, domainPartCount).reverse().join(".");
-    const subdomains = parts.slice(domainPartCount);
+    const { domain, subdomains: labels } = splitHost(urlObj.hostname);
+    const subdomainRules = Object.hasOwn(domainRules, domain) ? domainRules[domain] : undefined;
+    const subdomains = subdomainRules
+      ? applyRules(labels, subdomainRules.map((rule) => rule.split(".").reverse().join("/")))
+      : labels;
     let pathSegments = urlObj.pathname.split("/").filter(Boolean);
     const hostRules = Object.hasOwn(rules, urlObj.hostname) ? rules[urlObj.hostname] : undefined;
     if (hostRules) pathSegments = applyRules(pathSegments, hostRules);
@@ -262,14 +313,14 @@ export async function sortByLastAccessed(windowId?: number) {
 }
 
 export async function sortByWebsite(windowId?: number) {
-  const rules = await loadSortRules();
+  const [rules, domainRules] = await Promise.all([loadSortRules(), loadSubdomainRules()]);
   const sortKeyCache = new Map<string, UrlSortKey>();
 
   const getCachedSortKey = (url: string | undefined) => {
     const key = url ?? "";
     let sortKey = sortKeyCache.get(key);
     if (!sortKey) {
-      sortKey = getUrlSortKey(key, rules);
+      sortKey = getUrlSortKey(key, rules, domainRules);
       sortKeyCache.set(key, sortKey);
     }
     return sortKey;

@@ -104,11 +104,25 @@
   <dialog id="rules-dialog" aria-labelledby="rules-title">
     <div class="rules-body">
       <h3 id="rules-title"></h3>
-      <p id="rules-hint" class="hint">Rules apply top to bottom. Use / for the root page.</p>
-      <ul id="rules-list"></ul>
-      <div class="rules-actions rules-add-row">
-        <button type="button" id="rules-add">+ Add path</button>
-        <button type="button" id="rules-add-current">+ Add current path</button>
+      <div class="rules-sections">
+        <section id="subdomain-section" class="rules-section" aria-labelledby="subdomain-title">
+          <h4 id="subdomain-title"></h4>
+          <p id="subdomain-hint" class="hint">Rules apply top to bottom. Type a name such as www, or a full hostname. A rule also covers deeper subdomains.</p>
+          <ul id="subdomain-list" class="rules-list"></ul>
+          <div class="rules-actions rules-add-row">
+            <button type="button" id="subdomain-add">+ Add subdomain</button>
+            <button type="button" id="subdomain-add-current">+ Add current subdomain</button>
+          </div>
+        </section>
+        <section class="rules-section" aria-labelledby="rules-path-title">
+          <h4 id="rules-path-title"></h4>
+          <p id="rules-hint" class="hint">Rules apply top to bottom. Use / for the root page.</p>
+          <ul id="rules-list" class="rules-list"></ul>
+          <div class="rules-actions rules-add-row">
+            <button type="button" id="rules-add">+ Add path</button>
+            <button type="button" id="rules-add-current">+ Add current path</button>
+          </div>
+        </section>
       </div>
       <p id="rules-error" class="status" role="alert"></p>
       <div class="rules-actions">

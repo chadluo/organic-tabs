@@ -1,5 +1,5 @@
 export type Theme = "system" | "light" | "dark";
-import { OTHERS, type HostRules, type SortMode } from "./sort";
+import { APEX, OTHERS, type DomainRules, type HostRules, type SortMode } from "./sort";
 import { StorageEntry, sessionBackend } from "./storage";
 
 export interface UserSettings {
@@ -52,10 +52,26 @@ export async function loadSortRules(): Promise<HostRules> {
   return (await sortRulesEntry.get()) ?? {};
 }
 
+const subdomainRulesEntry = new StorageEntry<DomainRules>("subdomainRules");
+
+export async function loadSubdomainRules(): Promise<DomainRules> {
+  return (await subdomainRulesEntry.get()) ?? {};
+}
+
+/** Sets `key` to `list` in the stored table, or removes `key` when `list` is the default order. */
+async function saveRuleList(entry: StorageEntry<HostRules>, key: string, list: string[], isDefault: boolean) {
+  const rules = { ...(await entry.get()) };
+  if (isDefault) delete rules[key];
+  else rules[key] = list;
+  await entry.set(rules);
+}
+
 /** Saves one host's rules. A list with only the `OTHERS` marker equals no rules, so the host entry is removed. */
-export async function saveHostRules(host: string, list: string[]): Promise<void> {
-  const rules = { ...(await loadSortRules()) };
-  if (list.some((rule) => rule !== OTHERS)) rules[host] = list;
-  else delete rules[host];
-  await sortRulesEntry.set(rules);
+export function saveHostRules(host: string, list: string[]): Promise<void> {
+  return saveRuleList(sortRulesEntry, host, list, list.every((rule) => rule === OTHERS));
+}
+
+/** Saves one domain's subdomain order. `[APEX, OTHERS]` is the unsorted order, so the domain entry is removed. */
+export function saveDomainRules(domain: string, list: string[]): Promise<void> {
+  return saveRuleList(subdomainRulesEntry, domain, list, list.join("\n") === `${APEX}\n${OTHERS}`);
 }
